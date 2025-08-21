@@ -3,8 +3,8 @@
 O objetivo de é desenvolver um sistema web para gerenciamento de artigos e eventos científicos.
 Neste projeto, será utilizado as seguintes tecnologias:
 
-Front-End = React.js 
-Back-End = Python
+Front-End = React.js  
+Back-End = Python  
 Banco de Dados = MySql
 
 # Ferramentas de IA utilizadas

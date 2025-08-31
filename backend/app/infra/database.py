@@ -1,18 +1,28 @@
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-# URL de conexão para o SQLite
-DATABASE_URL = "sqlite:///./biblioteca.db"
+from app.core.config import settings
 
+# 1. ENGINE DE CONEXÃO
+# O engine é criado uma vez, usando a URL do arquivo de configuração.
+# O argumento `connect_args` é específico e necessário para o SQLite.
 engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False}
 )
+
+# 2. FÁBRICA DE SESSÕES
+# SessionLocal é uma classe. Instâncias desta classe serão as sessões do banco de dados.
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# 3. BASE DECLARATIVA
+# Usaremos esta classe Base como herança para todos os nossos modelos ORM (SQLAlchemy).
 Base = declarative_base()
 
-# Função para obter uma sessão do banco de dados (será usada para injeção de dependência)
+# 4. DEPENDÊNCIA DE SESSÃO
+# Função geradora que cria uma sessão para uma requisição,
+# a disponibiliza e garante que ela seja fechada ao final.
 def get_db():
     db = SessionLocal()
     try:

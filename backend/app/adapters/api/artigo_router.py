@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
+from sqlalchemy.exc import IntegrityError 
 
 # Importações da Arquitetura Limpa
 from app.domain.entities.artigo import Artigo as ArtigoEntity
@@ -35,19 +36,16 @@ def cadastrar_artigo(
     artigo_data: ArtigoCreateSchema,
     repo: IArtigoRepository = Depends(get_artigo_repository)
 ):
-    """
-    Endpoint para cadastrar um novo artigo. 
-    """
     try:
-        # Em uma implementação completa, aqui chamaríamos o Use Case:
-        # use_case = CadastrarArtigoUseCase(repo)
-        # novo_artigo = use_case.execute(artigo_data)
-        
-        # Implementação simplificada diretamente no router:
         novo_artigo = repo.save(artigo_data)
         return novo_artigo
+    # Captura a exceção específica de violação de integridade (como a de chave única)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, # <-- Código de status mais apropriado
+            detail="Um artigo com este DOI já existe."
+        )
     except Exception as e:
-        # Em um caso real, trataríamos exceções específicas (ex: DOI duplicado)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Erro ao cadastrar artigo: {e}"

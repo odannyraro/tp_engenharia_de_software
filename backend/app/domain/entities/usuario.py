@@ -16,4 +16,4 @@ class Usuario(BaseModel):
     ehAdmin: bool = Field(False, description="Indica se o usuário é um administrador")
 
     class Config:
-        orm_mode = True
+        from_attributes = True

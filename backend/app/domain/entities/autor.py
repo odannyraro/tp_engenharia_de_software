@@ -11,4 +11,4 @@ class Autor(BaseModel):
     afiliacao: Optional[str] = Field(None, description="Afiliação institucional do autor")
 
     class Config:
-        orm_mode = True # Habilita a compatibilidade com modelos ORM (SQLAlchemy)
+        from_attributes = True # Habilita a compatibilidade com modelos ORM (SQLAlchemy)

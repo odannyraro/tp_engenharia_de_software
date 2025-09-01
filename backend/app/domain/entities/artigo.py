@@ -26,4 +26,4 @@ class Artigo(BaseModel):
     autores: List[Autor] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

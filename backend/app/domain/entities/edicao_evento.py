@@ -11,4 +11,4 @@ class EdicaoEvento(BaseModel):
     id_evento: int = Field(..., description="ID do evento pai ao qual esta edição pertence")
     
     class Config:
-        orm_mode = True
+        from_attributes = True

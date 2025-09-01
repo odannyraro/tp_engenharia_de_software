@@ -12,4 +12,4 @@ class Evento(BaseModel):
     site_oficial: Optional[AnyUrl] = Field(None, description="URL do site oficial do evento")
 
     class Config:
-        orm_mode = True
+        from_attributes = True

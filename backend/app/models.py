@@ -53,6 +53,7 @@ class Artigo(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     titulo = Column(String, index=True)
+    autor = Column(String, nullable=False)
     ano = Column(Integer, nullable=True)
     doi = Column(String, unique=True, index=True, nullable=True)
     caminho_pdf = Column(String, nullable=True)
@@ -65,8 +66,9 @@ class Artigo(Base):
     paginas = Column(String, nullable=True)
     publicador = Column(String, nullable=True)
 
-    def __init__(self, titulo, id_edicao, ano=None, doi=None, caminho_pdf=None, journal=None, volume=None, numero=None, paginas=None, publicador=None):
+    def __init__(self, titulo, id_edicao, autor, ano=None, doi=None, caminho_pdf=None, journal=None, volume=None, numero=None, paginas=None, publicador=None):
         self.titulo = titulo
+        self.autor = autor
         self.ano = ano
         self.doi = doi
         self.caminho_pdf = caminho_pdf

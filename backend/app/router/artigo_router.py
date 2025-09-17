@@ -72,7 +72,7 @@ async def editar_artigo(id_artigo: int, artigo_schema: ArtigoSchema, session: Se
 async def pesquisa_titulo(titulo: str, session: Session = Depends(pegar_sessao)):
     result_artigos = session.query(Artigo).filter(Artigo.titulo.contains(titulo)).all()
     if not result_artigos:
-        raise HTTPException(status_code=400, detail="Não existe evento com esse nome")
+        raise HTTPException(status_code=400, detail="Não existe artigo com esse título")
     return result_artigos
 
 @artigo_router.get("/artigo/pesquisa-evento", response_model=List[ResponseArtigoSchema])
@@ -83,4 +83,11 @@ async def pesquisa_evento(evento_nome: str, session: Session = Depends(pegar_ses
     edicoes = session.query(EdicaoEvento).filter(EdicaoEvento.id_evento == evento_pesquisado.id).all()
     edicoes_ids = [e.id for e in edicoes]
     result_artigos = session.query(Artigo).filter(Artigo.id_edicao.in_(edicoes_ids)).all()
+    return result_artigos
+
+@artigo_router.get("/artigo/pesquisa-autor", response_model=List[ResponseArtigoSchema])
+async def pesquisa_autor(Nome: str, Sobrenome: str, session: Session = Depends(pegar_sessao)):
+    result_artigos = session.query(Artigo).filter(Artigo.autor.contains(f"{Sobrenome}, {Nome}")).all()
+    if not result_artigos:
+        raise HTTPException(status_code=400, detail="Não existe artigo com esse autor")
     return result_artigos

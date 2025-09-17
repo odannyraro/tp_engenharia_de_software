@@ -45,6 +45,7 @@ class ArtigoSchema(BaseModel):
     Representa um artigo científico publicado em uma edição de um evento.
     """
     titulo: str = Field(..., min_length=5)
+    autor: str = Field(..., description="Sobrenome, Nome")
     
     # Metadados de publicação (opcionais, comuns em BibTeX)
     journal: Optional[str] = None
@@ -67,6 +68,7 @@ class ArtigoSchema(BaseModel):
 
 class ResponseArtigoSchema(BaseModel):
     titulo: str
+    autor: str
     caminho_pdf: str
     journal: str
     ano: int

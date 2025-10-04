@@ -5,6 +5,7 @@ from dependencies import pegar_sessao, verificar_token
 from models import Artigo, Usuario, Subscriber, Evento, EdicaoEvento
 from typing import List
 from fastapi import Query
+from typing import Dict, Any
 import smtplib
 import os
 from email.message import EmailMessage
@@ -275,3 +276,67 @@ async def pesquisa_unificada(field: str = Query(..., description="Campo a pesqui
         resultados = session.query(Artigo).filter(Artigo.nome_evento.ilike(f"%{q}%")).all()
 
     return resultados
+
+
+@artigo_router.get('/authors/{author_slug}')
+async def author_home(author_slug: str, session: Session = Depends(pegar_sessao)) -> Dict[str, Any]:
+    """
+    Página do autor: lista os artigos daquele autor organizados por ano (sem paginação).
+    URL exemplo: /authors/marco-tulio-valente
+    Observação: não fazemos aliasing — o slug é convertido em nome simples (troca '-' por ' ').
+    """
+    def normalize_name(s: str) -> str:
+        return ' '.join(s.replace('-', ' ').strip().split()).lower()
+
+    search_name = normalize_name(author_slug)
+
+    # Busca candidatos por ilike para reduzir o conjunto e depois filtra por igualdade normalizada
+    candidates = session.query(Artigo).filter(Artigo.autores.ilike(f"%{search_name}%")).all()
+
+    matched = []
+    for art in candidates:
+        autores_list = [a.strip() for a in (art.autores or '').split(' and ') if a.strip()]
+        for a in autores_list:
+            if normalize_name(a) == search_name:
+                matched.append(art)
+                break
+
+    # Agrupa por ano
+    grouped: Dict[Any, list] = {}
+    for art in matched:
+        year = art.ano if getattr(art, 'ano', None) is not None else 'Unknown'
+        grouped.setdefault(year, []).append(art)
+
+    # Ordena anos desc (Unknown por último)
+    years = [y for y in grouped.keys() if y != 'Unknown']
+    years.sort(reverse=True)
+    if 'Unknown' in grouped:
+        years.append('Unknown')
+
+    result = {
+        'author': author_slug.replace('-', ' '),
+        'articles_by_year': []
+    }
+
+    for y in years:
+        arts = grouped[y]
+        arts_sorted = sorted(arts, key=lambda x: (x.ano if x.ano is not None else -1, (x.titulo or '').lower()), reverse=True)
+        serialized = [
+            {
+                'titulo': a.titulo,
+                'autores': a.autores,
+                'nome_evento': a.nome_evento,
+                'ano': a.ano,
+                'pagina_inicial': a.pagina_inicial,
+                'pagina_final': a.pagina_final,
+                'caminho_pdf': a.caminho_pdf,
+                'booktitle': getattr(a, 'booktitle', None),
+                'publisher': getattr(a, 'publisher', None),
+                'location': getattr(a, 'location', None),
+                'id_edicao': getattr(a, 'id_edicao', None)
+            }
+            for a in arts_sorted
+        ]
+        result['articles_by_year'].append({'year': y, 'articles': serialized})
+
+    return result

@@ -1,6 +1,6 @@
 # File: backend/app/adapters/api/artigo_router.py
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from typing import List
 from sqlalchemy.exc import IntegrityError 
 
@@ -74,3 +74,41 @@ def pesquisar_artigos(
         return artigos
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+
+from app.domain.repositories.i_artigo_repository import IArtigoRepository
+from app.infra.dependencies import get_artigo_repository
+from app.domain.use_cases.importar_bibtex import ImportarBibTeX 
+
+@router.post("/importar-bibtex")
+async def importar_bibtex(
+    arquivo: UploadFile = File(...),
+    # 1. Injetar o repositório
+    repo: IArtigoRepository = Depends(get_artigo_repository) 
+):
+    """
+    Importa vários artigos a partir de um arquivo BibTeX.
+    Apenas administradores podem usar.
+    """
+    if not arquivo.filename.endswith(".bib"):
+        raise HTTPException(status_code=400, detail="O arquivo deve ter extensão .bib")
+
+    try:
+        conteudo = await arquivo.read()
+        conteudo_str = conteudo.decode("utf-8")
+        
+        # 2. Instanciar o Caso de Uso com a dependência (o repositório)
+        use_case = ImportarBibTeX(artigo_repository=repo)
+        
+        # 3. Chamar o método do Caso de Uso, movendo a lógica de negócio para a camada Domain
+        qtd = use_case.importar_artigos_bibtex(conteudo_str)
+        
+        return {"mensagem": f"{qtd} artigos importados com sucesso."}
+    
+    # 4. Tratar possíveis erros de parse, banco de dados, etc.
+    except Exception as e:
+        # Você pode adicionar tratamento mais específico aqui, como IntegrityError
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Erro ao importar artigos: {e}"
+        )

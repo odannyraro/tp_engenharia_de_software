@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from schemas import ArtigoSchema, ResponseArtigoSchema
 from dependencies import pegar_sessao, verificar_token
@@ -8,63 +8,21 @@ from fastapi import Query
 import smtplib
 import os
 from email.message import EmailMessage
+from starlette.concurrency import run_in_threadpool # Import necessário para assincronicidade
+from utils import parse_bibtex_to_artigo_schema # Ajustado o import
 
 artigo_router = APIRouter(prefix="/artigo", tags=["artigo"])
 
-@artigo_router.get("/")
-async def home():
+# FUNÇÃO AUXILIAR: Lógica de Notificação
+def _notificar_subscribers(session: Session, artigo_schema: ArtigoSchema):
     """
-    Rota padrão para artigos
+    Notifica subscribers cujo nome case exatamente com algum autor do artigo.
+    Mantida síncrona, deve ser chamada via threadpool se for muito lenta.
     """
-    return {"mensagem": "Você acessou a rota padrão para artigos"}
-
-@artigo_router.post("/artigo")
-async def criar_artigo(artigo_schema: ArtigoSchema, session: Session = Depends(pegar_sessao),
-                       usuario: Usuario = Depends(verificar_token)):
-    if not usuario.admin:
-        raise HTTPException(status_code=401, detail="Você não tem autorização para fazer essa modificação")
-    
-    # Verifica se o evento existe
-    evento = session.query(Evento).filter(Evento.nome == artigo_schema.nome_evento).first()
-    if not evento:
-        raise HTTPException(status_code=400, detail=f"Evento '{artigo_schema.nome_evento}' não encontrado")
-
-    # Verifica se existe uma edição desse evento com o mesmo ano do artigo
-    if not artigo_schema.ano:
-        raise HTTPException(status_code=400, detail="O campo 'ano' é obrigatório para verificar a edição correspondente")
-    edicao = session.query(EdicaoEvento).filter((EdicaoEvento.id_evento == evento.id) & (EdicaoEvento.ano == artigo_schema.ano)).first()
-    if not edicao:
-        raise HTTPException(status_code=400, detail=f"Não existe edição do evento '{evento.nome}' no ano {artigo_schema.ano}")
-
-    # Verifica duplicidade pelo par (titulo, id_edicao)
-    artigo = session.query(Artigo).filter((Artigo.titulo == artigo_schema.titulo) & (Artigo.id_edicao == edicao.id)).first()
-    if artigo:
-        raise HTTPException(status_code=400, detail=f"Já existe artigo com esse título {artigo_schema.titulo} na edição {edicao.id}")
-    # Map fields explicitly to avoid accepting unexpected legacy keys
-    artigo_data = artigo_schema.model_dump()
-    novo_artigo = Artigo(
-        titulo=artigo_data.get('titulo'),
-        autores=artigo_data.get('autores'),
-        nome_evento=artigo_data.get('nome_evento'),
-        ano=artigo_data.get('ano'),
-        pagina_inicial=artigo_data.get('pagina_inicial'),
-        pagina_final=artigo_data.get('pagina_final'),
-        caminho_pdf=artigo_data.get('caminho_pdf'),
-        booktitle=artigo_data.get('booktitle'),
-        publisher=artigo_data.get('publisher'),
-        location=artigo_data.get('location'),
-        id_edicao=edicao.id
-    )
-    session.add(novo_artigo)
-    session.commit()
-    # Notificar usuários inscritos
     try:
-        # Notifica subscribers públicos cujo nome case exatamente com algum autor do artigo
         subscribers = session.query(Subscriber).all()
-        # autores no formato armazenado: Artigo.autores é uma string com 'Nome Sobrenome and Outro Autor'
         artigo_autores = artigo_schema.autores
 
-        # Normalize: cria variantes para comparação
         def normalize(name: str):
             return ' '.join(name.strip().split())
 
@@ -75,7 +33,6 @@ async def criar_artigo(artigo_schema: ArtigoSchema, session: Session = Depends(p
             sub_name = normalize(sub.nome)
             for a in autores_list:
                 a_norm = normalize(a)
-                # comparação direta (formato atual: 'Nome Sobrenome')
                 if a_norm.lower() == sub_name.lower():
                     matched.append(sub)
                     break
@@ -111,8 +68,159 @@ async def criar_artigo(artigo_schema: ArtigoSchema, session: Session = Depends(p
                     print(f"[NOTIFY] Enviar email para {u.email}: {subject} - {body}")
     except Exception as e:
         print(f"Erro ao notificar subscribers: {e}")
-    return {"mensagem": f"Artigo {artigo_schema.titulo} incluido no evento {artigo_schema.nome_evento}"}
+        # Esta função não deve levantar exceção para não quebrar a transação de BD
 
+# FUNÇÃO CORE: Lógica de Validação e Inserção
+def _cadastrar_artigo_core(session: Session, artigo_schema: ArtigoSchema) -> str:
+    """
+    Realiza a validação de evento/edição, verifica duplicidade e adiciona 
+    um ArtigoSchema à sessão do banco de dados (sem commit).
+    Retorna o título do artigo cadastrado.
+    """
+    # 1. Verifica se o evento existe
+    evento = session.query(Evento).filter(Evento.nome == artigo_schema.nome_evento).first()
+    if not evento:
+        raise HTTPException(status_code=400, detail=f"Evento '{artigo_schema.nome_evento}' não encontrado")
+
+    edicao = None
+    
+    if artigo_schema.ano:
+        # Se o ANO for fornecido no ArtigoSchema, compara o ID do Evento E o Ano.
+        edicao = session.query(EdicaoEvento).filter(
+            (EdicaoEvento.id_evento == evento.id) & (EdicaoEvento.ano == artigo_schema.ano)
+        ).first()
+        
+        # Se o ano é fornecido, mas a edição específica não existe, levanta erro.
+        if not edicao:
+            raise HTTPException(status_code=400, detail=f"Não existe edição do evento '{evento.nome}' no ano {artigo_schema.ano}")
+            
+    else:
+        # Se o ANO NÃO for fornecido, compara APENAS o ID do Evento.
+        # Isto retornará a primeira edição encontrada (geralmente a mais antiga ou a primeira a ser inserida no BD).
+        # ATENÇÃO: Se houver várias edições sem ano, o resultado é arbitrário (o primeiro encontrado).
+        edicao = session.query(EdicaoEvento).filter(
+            EdicaoEvento.id_evento == evento.id
+        ).first()
+
+        # Se não houver ANO e nenhuma edição for encontrada para o evento, levanta erro.
+        if not edicao:
+            raise HTTPException(status_code=400, detail=f"Não existe edição cadastrada para o evento '{evento.nome}' (ano não especificado).")
+            
+    
+    # Verifica duplicidade pelo par (titulo, id_edicao)
+    artigo = session.query(Artigo).filter((Artigo.titulo == artigo_schema.titulo) & (Artigo.id_edicao == edicao.id)).first()
+    if artigo:
+        raise HTTPException(status_code=400, detail=f"Artigo com título '{artigo_schema.titulo}' já cadastrado na edição {edicao.id}.")
+
+    # 4. Criação do novo artigo e add à session
+    # Obtém o dicionário de dados do ArtigoSchema
+    artigo_data = artigo_schema.model_dump()
+    
+    # Adiciona o campo validado 'id_edicao' ao dicionário de dados
+    artigo_data['id_edicao'] = edicao.id
+    
+    # A maneira mais limpa de instanciar o modelo Artigo.
+    # Isso garante que todos os campos do schema Pydantic sejam mapeados.
+    novo_artigo = Artigo(**artigo_data) # <--- MUDANÇA PRINCIPAL AQUI
+    
+    session.add(novo_artigo)
+    
+    # 5. Notificação
+    _notificar_subscribers(session, artigo_schema)
+    
+    return novo_artigo.titulo
+
+# =========================================================================
+# ENDPOINTS (ASSÍNCRONOS)
+# =========================================================================
+
+@artigo_router.get("/")
+async def home():
+    """
+    Rota padrão para artigos
+    """
+    return {"mensagem": "Você acessou a rota padrão para artigos"}
+
+# ENDPOINT: Criar artigo
+@artigo_router.post("/artigo")
+async def criar_artigo(artigo_schema: ArtigoSchema, session: Session = Depends(pegar_sessao),
+    usuario: Usuario = Depends(verificar_token)):
+    """
+    Cria um único artigo após validações de evento, edição e duplicidade.
+    """
+    if not usuario.admin:
+        raise HTTPException(status_code=401, detail="Você não tem autorização para fazer essa modificação")
+    
+    try:
+        # Executa a lógica core em uma thread separada para evitar bloqueio do asyncio
+        titulo_cadastrado = await run_in_threadpool(_cadastrar_artigo_core, session, artigo_schema)
+        
+        # O commit é feito APÓS a lógica core ser bem-sucedida
+        session.commit()
+        
+    except HTTPException:
+        # Em caso de erro de validação (HTTPException), faz o rollback e relança o erro.
+        session.rollback()
+        raise
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno ao cadastrar artigo: {e}")
+
+    return {"mensagem": f"Artigo {titulo_cadastrado} incluído com sucesso no evento {artigo_schema.nome_evento}"}
+
+# ENDPOINT: Importar múltiplos artigos via BibTeX
+@artigo_router.post("/artigo/importar-bibtex")
+async def importar_bibtex(
+    bibtex_file: UploadFile = File(..., description="Arquivo de texto contendo dados BibTeX"),
+    session: Session = Depends(pegar_sessao),
+    usuario: Usuario = Depends(verificar_token)
+):
+    """
+    Importa múltiplos artigos a partir de um arquivo .bib ou .txt, reutilizando a lógica de criação.
+    """
+    if not usuario.admin:
+        raise HTTPException(status_code=401, detail="Você não tem autorização para fazer essa modificação")
+    
+    # 1. Leitura e Parsing do BibTeX (Assíncrono via threadpool)
+    try:
+        contents = await bibtex_file.read()
+        bibtex_data = contents.decode('utf-8') 
+        
+        # O parser é chamado na threadpool, retornando uma LISTA de ArtigoSchema
+        artigos_data_list = await run_in_threadpool(parse_bibtex_to_artigo_schema, bibtex_data)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=f"Erro de validação ou formato do BibTeX: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro ao processar o arquivo BibTeX: {e}")
+        
+    # 2. Cadastramento de TODOS os Artigos (Transação Atômica)
+    titulos_cadastrados = []
+    
+    try:
+        for artigo_schema in artigos_data_list:
+            # Chama a lógica central de cadastro para CADA artigo na lista
+            titulo_cadastrado = _cadastrar_artigo_core(session, artigo_schema)
+            titulos_cadastrados.append(titulo_cadastrado)
+        
+        # 3. Commit Único no Final
+        # Se TUDO deu certo (nenhuma HTTPException), salva todos no BD
+        session.commit()
+        
+    except HTTPException as e:
+        # Se QUALQUER artigo falhar na validação, faz o rollback de todos os adds
+        session.rollback()
+        raise e 
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro interno ao cadastrar múltiplos artigos: {e}")
+
+    # 4. Mensagem de Sucesso
+    mensagem_final = f"Sucesso! Foram importados {len(titulos_cadastrados)} artigos do arquivo '{bibtex_file.filename}'."
+    
+    return {"mensagem": mensagem_final, "total_importados": len(titulos_cadastrados), "titulos": titulos_cadastrados}
+
+# ENDPOINT: Remover artigo
 @artigo_router.post("/artigo/remover/{id_artigo}")
 async def remover_artigo(id_artigo: int, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):
@@ -128,6 +236,7 @@ async def remover_artigo(id_artigo: int, session: Session = Depends(pegar_sessao
     return {"mensagem": f"artigo '{id_artigo}' removido com sucesso",
             "Artigo": artigo}
 
+# ENDPOINT: Editar artigo
 @artigo_router.post("/artigo/editar/{id_artigo}")
 async def editar_artigo(id_artigo: int, artigo_schema: ArtigoSchema, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):
@@ -144,9 +253,7 @@ async def editar_artigo(id_artigo: int, artigo_schema: ArtigoSchema, session: Se
     session.commit()
     return {"mensagem": f"Artigo '{id_artigo}' editado com sucesso"}
 
-# Removed per-field search endpoints in favor of the unified /artigo/search endpoint
-
-
+# ENDPOINT: Pesquisa unificada
 @artigo_router.get("/artigo/search", response_model=List[ResponseArtigoSchema])
 async def pesquisa_unificada(field: str = Query(..., description="Campo a pesquisar: titulo, autor, evento"),
                               q: str = Query(..., description="Substring a procurar"),

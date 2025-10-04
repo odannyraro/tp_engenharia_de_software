@@ -94,3 +94,7 @@ class ResponseSubscriberSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class BibtexImportSchema(BaseModel):
+    bibtex_data: str

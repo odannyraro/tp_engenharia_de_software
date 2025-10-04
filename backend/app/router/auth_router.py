@@ -31,6 +31,9 @@ async def home():
     """
     return {"mensagem": "Você acessou a rota padrão de autenticação", "autenticado": False}
 
+
+# rotas de subscribe/unsubscribe removidas (usar /subscriber para assinaturas públicas)
+
 @auth_router.post("/criar_conta")
 async def criar_conta(usuario_schema: UsuarioSchema, session: Session = Depends(pegar_sessao)):
     usuario = session.query(Usuario).filter(Usuario.email ==usuario_schema.email).first()

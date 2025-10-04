@@ -24,7 +24,8 @@ async def criar_evento(evento_schema: EventoSchema, session: Session = Depends(p
         raise HTTPException(status_code=400, detail="Já existe evento com esse nome")
     else:
         data = evento_schema.model_dump()
-        data['site'] = str(data['site'])  # Converte AnyUrl para string
+        # Converte AnyUrl para string apenas se existir
+        data['site'] = str(data['site']) if data.get('site') else None
         novo_evento = Evento(**data)
         session.add(novo_evento)
         session.commit()
@@ -58,6 +59,7 @@ async def editar_evento(id_evento: int, evento_schema: EventoSchema, session: Se
     evento.sigla = evento_schema.sigla
     evento.descricao = evento_schema.descricao
     evento.site = str(evento_schema.site) if evento_schema.site else None
+    evento.entidade_promotora = evento_schema.entidade_promotora
     session.commit()
     return {"mensagem": f"Evento '{evento_schema.nome}' editado com sucesso"}
 

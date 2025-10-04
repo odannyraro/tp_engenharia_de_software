@@ -18,7 +18,9 @@ oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/login-form")
 from router.auth_router import auth_router
 from router.evento_routher import evento_router
 from router.artigo_router import artigo_router
+from router.subscriber_router import subscriber_router
 
 app.include_router(auth_router)
 app.include_router(evento_router)
 app.include_router(artigo_router)
+app.include_router(subscriber_router)

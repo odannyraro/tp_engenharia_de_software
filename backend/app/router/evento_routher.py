@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 from schemas import EventoSchema, EdicaoEventoSchema
 from dependencies import pegar_sessao, verificar_token
 from models import Evento, Usuario, EdicaoEvento
@@ -115,3 +116,19 @@ async def editar_edicao(id_edicao: int, edicao_schema: EdicaoEventoSchema, sessi
     edicao.id_evento = edicao_schema.id_evento
     session.commit()
     return {"mensagem": f"Edição {id_edicao} editada com sucesso"}
+
+@evento_router.get("/recentes")
+async def listar_eventos_recentes(session: Session = Depends(pegar_sessao)):
+    """
+    Lista os 5 eventos mais recentes adicionados ao banco de dados.
+    """
+    eventos = session.query(Evento).order_by(Evento.id.desc()).limit(5).all()
+    return eventos
+
+@evento_router.get("/search")
+async def pesquisar_eventos(q: str, session: Session = Depends(pegar_sessao)):
+    """
+    Pesquisa por eventos cujo nome contém a substring `q`.
+    """
+    eventos = session.query(Evento).filter(Evento.nome.ilike(f"%{q}%")).all()
+    return eventos

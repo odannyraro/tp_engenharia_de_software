@@ -254,6 +254,16 @@ async def editar_artigo(id_artigo: int, artigo_schema: ArtigoSchema, session: Se
     session.commit()
     return {"mensagem": f"Artigo '{id_artigo}' editado com sucesso"}
 
+# ENDPOINT: Listar artigos mais recentes
+@artigo_router.get("/recentes", response_model=List[ResponseArtigoSchema])
+async def listar_artigos_recentes(session: Session = Depends(pegar_sessao)):
+    """
+    Lista os 5 artigos mais recentes adicionados ao banco de dados.
+    """
+    artigos = session.query(Artigo).order_by(Artigo.id.desc()).limit(5).all()
+    return artigos
+
+
 # ENDPOINT: Pesquisa unificada
 @artigo_router.get("/artigo/search", response_model=List[ResponseArtigoSchema])
 async def pesquisa_unificada(field: str = Query(..., description="Campo a pesquisar: titulo, autor, evento"),

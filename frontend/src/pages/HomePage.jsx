@@ -51,7 +51,7 @@ function HomePage() {
 
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px' }}>
-      <h1>Digital Library</h1>
+      <h1>Biblioteca Digital</h1>
 
       <div style={{ marginBottom: '20px' }}>
         <input
@@ -94,14 +94,14 @@ function HomePage() {
         </div>
       ) : (
         <div>
-          <h2>Últimos Artigos Adicionados</h2>
+          <h2>Artigos mais recentes</h2>
           <ul>
             {recentArticles.map(article => (
               <li key={article.id}>{article.titulo} ({article.ano})</li>
             ))}
           </ul>
 
-          <h2>Últimos Eventos Adicionados</h2>
+          <h2>Eventos mais recentes</h2>
           <ul>
             {recentEvents.map(event => (
               <li key={event.id}>{event.nome}</li>

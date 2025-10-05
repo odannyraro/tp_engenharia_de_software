@@ -18,8 +18,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 app = FastAPI(title = os.getenv("PROJECT_NAME"), description= os.getenv("PROJECT_DESCRIPITION"), version= os.getenv("PROJECT_VERSION"))
 
 origins = [
-    "http://localhost",
     "http://localhost:5173",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -37,8 +37,10 @@ from router.auth_router import auth_router
 from router.evento_routher import evento_router
 from router.artigo_router import artigo_router
 from router.subscriber_router import subscriber_router
+from router.edition_router import edition_router
 
 app.include_router(auth_router)
 app.include_router(evento_router)
 app.include_router(artigo_router)
 app.include_router(subscriber_router)
+app.include_router(edition_router)

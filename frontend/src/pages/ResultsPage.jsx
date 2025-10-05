@@ -1,7 +1,7 @@
 // src/pages/ResultsPage.jsx
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useParams, useLocation } from 'react-router-dom';
-import api from '../services/api';
+import { useSearchParams, useParams } from 'react-router-dom';
+import * as api from '../services/api';
 import ArticleList from '../components/ArticleList';
 
 function ResultsPage() {
@@ -9,7 +9,6 @@ function ResultsPage() {
   const [title, setTitle] = useState('Resultados da Busca');
   const [searchParams] = useSearchParams();
   const { eventName, authorName } = useParams();
-  const location = useLocation();
 
   useEffect(() => {
     let endpoint = '';
@@ -43,7 +42,7 @@ function ResultsPage() {
           setArticles([]);
         });
     }
-  }, [location.search, eventName, authorName]);
+  }, [searchParams, eventName, authorName]);
 
   return (
     <div>

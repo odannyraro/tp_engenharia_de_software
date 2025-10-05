@@ -132,3 +132,32 @@ async def pesquisar_eventos(q: str, session: Session = Depends(pegar_sessao)):
     """
     eventos = session.query(Evento).filter(Evento.nome.ilike(f"%{q}%")).all()
     return eventos
+
+@evento_router.get("/{nome_evento}")
+async def get_evento_por_nome(nome_evento: str, session: Session = Depends(pegar_sessao)):
+    """
+    Retorna um evento específico pelo nome, incluindo suas edições.
+    """
+    evento = session.query(Evento).filter(Evento.nome.ilike(f"{nome_evento}")).first()
+    if not evento:
+        raise HTTPException(status_code=404, detail="Evento não encontrado")
+
+    edicoes = session.query(EdicaoEvento).filter(EdicaoEvento.id_evento == evento.id).order_by(EdicaoEvento.ano.desc()).all()
+
+    evento_data = {
+        "id": evento.id,
+        "nome": evento.nome,
+        "sigla": evento.sigla,
+        "descricao": evento.descricao,
+        "site": evento.site,
+        "entidade_promotora": evento.entidade_promotora,
+        "edicoes": [
+            {
+                "id": edicao.id,
+                "ano": edicao.ano,
+                "local": edicao.local,
+                "id_evento": edicao.id_evento
+            } for edicao in edicoes
+        ]
+    }
+    return evento_data

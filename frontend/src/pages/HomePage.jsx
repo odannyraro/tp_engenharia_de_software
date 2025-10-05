@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { getRecentArticles, getRecentEvents, searchArticles, searchEvents } from '../services/api';
 
 function HomePage() {
@@ -86,7 +87,9 @@ function HomePage() {
               <h3>Eventos</h3>
               <ul>
                 {searchResults.events.map(event => (
-                  <li key={event.id}>{event.nome}</li>
+                  <li key={event.id}>
+                    <Link to={`/events/${event.nome.toLowerCase()}`}>{event.nome}</Link>
+                  </li>
                 ))}
               </ul>
             </div>
@@ -104,7 +107,9 @@ function HomePage() {
           <h2>Eventos mais recentes</h2>
           <ul>
             {recentEvents.map(event => (
-              <li key={event.id}>{event.nome}</li>
+              <li key={event.id}>
+                <Link to={`/events/${event.nome.toLowerCase()}`}>{event.nome}</Link>
+              </li>
             ))}
           </ul>
         </div>

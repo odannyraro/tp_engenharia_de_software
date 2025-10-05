@@ -18,8 +18,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 app = FastAPI(title = os.getenv("PROJECT_NAME"), description= os.getenv("PROJECT_DESCRIPITION"), version= os.getenv("PROJECT_VERSION"))
 
 origins = [
-    "http://localhost",
     "http://localhost:5173",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(

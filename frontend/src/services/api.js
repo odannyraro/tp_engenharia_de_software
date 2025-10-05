@@ -23,3 +23,11 @@ export const searchArticles = (query) => {
 export const searchEvents = (query) => {
   return apiClient.get(`/evento/search?q=${query}`);
 };
+
+export const getEventByName = (eventName) => {
+  return apiClient.get(`/evento/${eventName}`);
+};
+
+export const getEventEdition = (eventName, year) => {
+  return apiClient.get(`/evento/${eventName}/${year}`);
+};

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // --- Estilos para o Modal ---
 
@@ -61,13 +61,40 @@ const buttonStyle = {
 
 // --- Componente do Formulário ---
 
-export default function EditionForm({ event, onSave, onCancel }) {
+export default function EditionForm({ event, initial, onSave, onCancel }) {
   const [ano, setAno] = useState('');
   const [local, setLocal] = useState('');
+  const [status, setStatus] = useState(null); // { message, type: 'success' | 'error' }
+  const [loading, setLoading] = useState(false);
+  const isEditing = !!initial;
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (initial) {
+      setAno(initial.ano || '');
+      setLocal(initial.local || '');
+    }
+  }, [initial]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({ ano: parseInt(ano), local, id_evento: event.id });
+    setLoading(true);
+    setStatus(null);
+    const payload = { 
+        ano: parseInt(ano), 
+        local, 
+        id_evento: initial ? initial.id_evento : event.id 
+    };
+    const result = await onSave(payload);
+    setLoading(false);
+    if (result.success) {
+      setStatus({ message: result.message, type: 'success' });
+      if (!isEditing) {
+        setAno('');
+        setLocal('');
+      }
+    } else {
+      setStatus({ message: result.message, type: 'error' });
+    }
   };
 
   // Impede que o clique dentro do formulário feche o modal
@@ -78,7 +105,9 @@ export default function EditionForm({ event, onSave, onCancel }) {
       <div style={modalContentStyle} onClick={handleContentClick}>
         <button style={closeButtonStyle} onClick={onCancel}>&times;</button>
         
-        <h2 style={{marginTop: 0}}>Criar Nova Edição para {event.nome}</h2>
+        <h2 style={{marginTop: 0}}>
+            {isEditing ? `Editar Edição ${initial.ano}` : `Criar Nova Edição para ${event.nome}`}
+        </h2>
 
         <form onSubmit={handleSubmit}>
           <div>
@@ -99,16 +128,28 @@ export default function EditionForm({ event, onSave, onCancel }) {
               style={inputStyle} 
             />
           </div>
+
+          {status && (
+            <p style={{ 
+              marginTop: '1rem', 
+              textAlign: 'center',
+              color: status.type === 'success' ? '#28a745' : '#ff6464',
+              fontWeight: 'bold',
+            }}>
+              {status.message}
+            </p>
+          )}
+
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button 
               type="button" 
               onClick={onCancel} 
               style={{...buttonStyle, backgroundColor: '#555'}}
             >
-              Cancelar
+              Fechar
             </button>
-            <button type="submit" style={buttonStyle}>
-              Salvar
+            <button type="submit" style={buttonStyle} disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>

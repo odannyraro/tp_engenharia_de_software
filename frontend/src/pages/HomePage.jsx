@@ -1,6 +1,35 @@
+// src/pages/HomePage.jsx
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getRecentArticles, getRecentEvents, searchArticles, searchEvents } from '../services/api';
+
+// --- Componentes de Estilo Internos para Organização ---
+
+const cardStyle = {
+  background: '#2c2c2e', // Um cinza um pouco mais claro que o fundo
+  borderRadius: '8px',
+  padding: '1.5rem',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+  flex: 1,
+  minWidth: '300px',
+  textAlign: 'left',
+};
+
+const listHeaderStyle = {
+  marginTop: 0,
+  borderBottom: '2px solid #646cff',
+  paddingBottom: '0.5rem',
+  marginBottom: '1rem',
+};
+
+const listItemStyle = {
+  listStyle: 'none',
+  padding: '10px',
+  borderRadius: '4px',
+  transition: 'background-color 0.2s ease-in-out',
+};
+
+// --- Componente Principal ---
 
 function HomePage() {
   const [recentArticles, setRecentArticles] = useState([]);
@@ -12,32 +41,37 @@ function HomePage() {
 
   useEffect(() => {
     const fetchInitialData = async () => {
+      setIsLoading(true);
       try {
-        const articlesRes = await getRecentArticles();
+        const [articlesRes, eventsRes] = await Promise.all([
+          getRecentArticles(),
+          getRecentEvents(),
+        ]);
         setRecentArticles(articlesRes.data);
-
-        const eventsRes = await getRecentEvents();
         setRecentEvents(eventsRes.data);
       } catch (err) {
         setError('Falha ao buscar dados recentes.');
         console.error(err);
+      } finally {
+        setIsLoading(false);
       }
     };
-
     fetchInitialData();
   }, []);
 
-  const handleSearch = async () => {
+  const handleSearch = async (e) => {
+    e.preventDefault();
     if (!searchQuery.trim()) {
       setSearchResults({ articles: [], events: [] });
       return;
     }
-
     setIsLoading(true);
     setError(null);
     try {
-      const articlesRes = await searchArticles(searchQuery);
-      const eventsRes = await searchEvents(searchQuery);
+      const [articlesRes, eventsRes] = await Promise.all([
+        searchArticles(searchQuery),
+        searchEvents(searchQuery),
+      ]);
       setSearchResults({
         articles: articlesRes.data,
         events: eventsRes.data,
@@ -50,70 +84,81 @@ function HomePage() {
     }
   };
 
-  return (
-    <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px' }}>
-      <h1>Biblioteca Digital</h1>
+  const hasSearchResults = searchResults.articles.length > 0 || searchResults.events.length > 0;
 
-      <div style={{ marginBottom: '20px' }}>
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <h1>Biblioteca Digital</h1>
+        <p style={{ fontSize: '1.2rem', color: '#aaa' }}>Seu portal para artigos e eventos científicos.</p>
+      </div>
+
+      <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '40px' }}>
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Buscar artigos ou eventos..."
-          style={{ width: '300px', padding: '8px' }}
+          placeholder="Buscar por título, autor ou nome do evento..."
+          style={{
+            flexGrow: 1,
+            padding: '15px 20px',
+            fontSize: '1.1rem',
+            borderRadius: '25px',
+            border: '1px solid #555',
+            backgroundColor: '#333',
+            color: '#fff',
+          }}
         />
-        <button onClick={handleSearch} disabled={isLoading} style={{ padding: '8px 12px', marginLeft: '10px' }}>
+        <button type="submit" disabled={isLoading} style={{
+          padding: '15px 30px',
+          fontSize: '1.1rem',
+          borderRadius: '25px',
+          border: 'none',
+          backgroundColor: '#646cff',
+          color: '#fff',
+          cursor: 'pointer',
+        }}>
           {isLoading ? 'Buscando...' : 'Buscar'}
         </button>
-      </div>
+      </form>
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
 
-      {searchResults.articles.length > 0 || searchResults.events.length > 0 ? (
-        <div>
-          <h2>Resultados da Busca</h2>
-          {searchResults.articles.length > 0 && (
-            <div>
-              <h3>Artigos</h3>
-              <ul>
-                {searchResults.articles.map(article => (
-                  <li key={article.id}>{article.titulo} ({article.ano})</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {searchResults.events.length > 0 && (
-            <div>
-              <h3>Eventos</h3>
-              <ul>
-                {searchResults.events.map(event => (
-                  <li key={event.id}>
-                    <Link to={`/events/${event.nome.toLowerCase()}`}>{event.nome}</Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <h2>Artigos mais recentes</h2>
-          <ul>
-            {recentArticles.map(article => (
-              <li key={article.id}>{article.titulo} ({article.ano})</li>
-            ))}
-          </ul>
-
-          <h2>Eventos mais recentes</h2>
-          <ul>
-            {recentEvents.map(event => (
-              <li key={event.id}>
-                <Link to={`/events/${event.nome.toLowerCase()}`}>{event.nome}</Link>
+      <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        {/* Card de Artigos */}
+        <section style={{ ...cardStyle, flex: 2 }}>
+          <h2 style={listHeaderStyle}>{hasSearchResults ? 'Resultados de Artigos' : 'Artigos Mais Recentes'}</h2>
+          <ul style={{ padding: 0, margin: 0 }}>
+            {(hasSearchResults ? searchResults.articles : recentArticles).map(article => (
+              <li key={article.id} style={listItemStyle} 
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3c3c3e'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                <Link to="#" style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <strong style={{ color: '#fff' }}>{article.titulo}</strong>
+                  <p style={{ margin: '4px 0', color: '#ccc' }}>{article.ano}</p>
+                </Link>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        </section>
+
+        {/* Card de Eventos */}
+        <section style={cardStyle}>
+          <h2 style={listHeaderStyle}>{hasSearchResults ? 'Resultados de Eventos' : 'Eventos Recentes'}</h2>
+          <ul style={{ padding: 0, margin: 0 }}>
+            {(hasSearchResults ? searchResults.events : recentEvents).map(event => (
+              <li key={event.id} style={listItemStyle}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3c3c3e'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                <Link to={`/events/${event.sigla.toLowerCase()}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <strong style={{ color: '#fff' }}>{event.nome}</strong>
+                  <p style={{ margin: '4px 0', color: '#aaa' }}>{event.sigla.toUpperCase()}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </div>
     </div>
   );
 }

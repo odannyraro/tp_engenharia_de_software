@@ -1,118 +1,59 @@
-import React, { useState } from 'react';
+// src/pages/EditionPage.jsx
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getEventEdition } from '../services/api';
+import ArticleList from '../components/ArticleList';
 
-// --- Estilos para o Modal ---
+function EditionPage() {
+  const { eventName, year } = useParams();
+  const [edition, setEdition] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const modalOverlayStyle = {
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.7)',
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  zIndex: 1000,
-};
+  useEffect(() => {
+    const fetchEdition = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const res = await getEventEdition(eventName, year);
+        setEdition(res.data);
+      } catch (err) {
+        setError('Falha ao buscar os dados da edição.');
+        console.error("API Error:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-const modalContentStyle = {
-  background: '#2c2c2e',
-  borderRadius: '8px',
-  padding: '2rem',
-  boxShadow: '0 5px 15px rgba(0, 0, 0, 0.5)',
-  width: '90%',
-  maxWidth: '500px',
-  position: 'relative',
-};
+    fetchEdition();
+  }, [eventName, year]);
 
-const closeButtonStyle = {
-  position: 'absolute',
-  top: '15px',
-  right: '15px',
-  background: 'transparent',
-  border: 'none',
-  fontSize: '1.5rem',
-  color: '#aaa',
-  cursor: 'pointer',
-};
+  if (isLoading) {
+    return <p>Carregando edição...</p>;
+  }
 
-const inputStyle = {
-  width: '100%',
-  padding: '12px 20px',
-  margin: '8px 0 20px',
-  boxSizing: 'border-box',
-  fontSize: '1rem',
-  borderRadius: '25px',
-  border: '1px solid #555',
-  backgroundColor: '#333',
-  color: '#fff',
-};
+  if (error) {
+    return <p style={{ color: 'red' }}>{error}</p>;
+  }
 
-const buttonStyle = {
-  padding: '12px 30px',
-  fontSize: '1rem',
-  borderRadius: '25px',
-  border: 'none',
-  backgroundColor: '#646cff',
-  color: '#fff',
-  cursor: 'pointer',
-  transition: 'background-color 0.3s',
-};
-
-// --- Componente do Formulário ---
-
-export default function EditionForm({ event, onSave, onCancel }) {
-  const [ano, setAno] = useState('');
-  const [local, setLocal] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSave({ ano: parseInt(ano), local, id_evento: event.id });
-  };
-
-  // Impede que o clique dentro do formulário feche o modal
-  const handleContentClick = (e) => e.stopPropagation();
+  if (!edition) {
+    return <p>Nenhuma edição encontrada.</p>;
+  }
 
   return (
-    <div style={modalOverlayStyle} onClick={onCancel}>
-      <div style={modalContentStyle} onClick={handleContentClick}>
-        <button style={closeButtonStyle} onClick={onCancel}>&times;</button>
-        
-        <h2 style={{marginTop: 0}}>Criar Nova Edição para {event.nome}</h2>
-
-        <form onSubmit={handleSubmit}>
-          <div>
-            <label>Ano:</label>
-            <input 
-              type="number"
-              value={ano} 
-              onChange={(e) => setAno(e.target.value)} 
-              required 
-              style={inputStyle} 
-            />
-          </div>
-          <div>
-            <label>Local:</label>
-            <input 
-              value={local} 
-              onChange={(e) => setLocal(e.target.value)} 
-              style={inputStyle} 
-            />
-          </div>
-          <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button 
-              type="button" 
-              onClick={onCancel} 
-              style={{...buttonStyle, backgroundColor: '#555'}}
-            >
-              Cancelar
-            </button>
-            <button type="submit" style={buttonStyle}>
-              Salvar
-            </button>
-          </div>
-        </form>
+    <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px', textAlign: 'left' }}>
+      {/* Seção de Detalhes da Edição */}
+      <h1>{edition.evento_nome}</h1>
+      <div style={{ marginBottom: '30px', paddingBottom: '15px', borderBottom: '1px solid #ccc' }}>
+        <h2>Edição de {edition.ano}</h2>
+        {edition.local && <p><strong>Local:</strong> {edition.local}</p>}
       </div>
+
+      {/* Seção de Artigos */}
+      <h2>Artigos Publicados</h2>
+      <ArticleList articles={edition.artigos} />
     </div>
   );
 }
+
+export default EditionPage;

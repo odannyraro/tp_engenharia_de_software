@@ -200,9 +200,9 @@ function HomePage() {
               <li key={event.id} style={listItemStyle}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3c3c3e'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <Link to={`/events/${event.sigla.toLowerCase()}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link to={`/events/${event.nome}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <strong style={{ color: '#fff' }}>{event.nome}</strong>
-                  <p style={{ margin: '4px 0', color: '#aaa' }}>{event.sigla.toUpperCase()}</p>
+                  <p style={{ margin: '4px 0', color: '#aaa' }}>{event.sigla ? event.sigla.toUpperCase() : ''}</p>
                 </Link>
               </li>
             ))}

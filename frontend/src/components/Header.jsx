@@ -1,7 +1,66 @@
 // src/components/Header.jsx
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { setAuthToken } from '../services/api';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+
+// --- ESTILOS ---
+
+const headerStyle = {
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  padding: '1rem 2rem',
+  borderBottom: '1px solid #444',
+  backgroundColor: '#1e1e1e',
+};
+
+const logoStyle = {
+  textDecoration: 'none',
+  color: '#fff',
+  fontSize: '1.5rem',
+  fontWeight: 'bold',
+};
+
+const navStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+};
+
+const navLinkStyle = {
+  padding: '8px 16px',
+  borderRadius: '20px',
+  textDecoration: 'none',
+  color: '#ccc',
+  backgroundColor: 'transparent',
+  border: '1px solid transparent',
+  transition: 'all 0.3s ease',
+};
+
+const activeLinkStyle = {
+  backgroundColor: '#646cff',
+  color: '#fff',
+  borderColor: '#646cff',
+};
+
+const userStyle = {
+  color: '#ccc',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '15px'
+};
+
+const logoutButtonStyle = {
+  padding: '8px 16px',
+  borderRadius: '20px',
+  border: '1px solid #ff6464',
+  backgroundColor: 'transparent',
+  color: '#ff6464',
+  cursor: 'pointer',
+  transition: 'all 0.3s ease',
+};
+
+
+// --- COMPONENTE ---
 
 function Header() {
   const [user, setUser] = useState(null);
@@ -28,7 +87,6 @@ function Header() {
   }, []);
 
   const handleLogout = () => {
-    // remove only user session (do not clear admin token)
     localStorage.removeItem('user');
     localStorage.removeItem('user_access_token');
     setUser(null);
@@ -37,19 +95,60 @@ function Header() {
   };
 
   return (
-    <header style={{ marginBottom: '20px', padding: '10px', borderBottom: '1px solid #ccc' }}>
-      <nav>
-        <Link to="/" style={{ marginRight: '15px' }}>Home</Link>
-        <Link to="/signup" style={{ marginRight: '15px' }}>Sign Up</Link>
-        <Link to="/login" style={{ marginRight: '15px' }}>Login</Link>
-        <Link to="/admin" style={{ marginRight: '15px' }}>Admin</Link>
+    <header style={headerStyle}>
+      {/* Lado Esquerdo: Logo */}
+      <Link to="/" style={logoStyle}>Biblioteca Digital</Link>
+
+      {/* Lado Direito: Navegação e Usuário */}
+      <nav style={navStyle}>
+        <NavLink 
+          to="/" 
+          style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
+        >
+          Home
+        </NavLink>
+        <NavLink 
+          to="/admin" 
+          style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
+        >
+          Admin
+        </NavLink>
+        
+        {/* Seção do Usuário */}
         {user ? (
-          <span style={{ marginLeft: 12 }}>
-            Olá, {user.nome}
-            <Link to={`/authors/${slugify(user.nome)}`} style={{ marginLeft: 8, marginRight: 8 }}>Meus artigos</Link>
-            <button onClick={handleLogout} style={{ marginLeft: 8 }}>Logout</button>
-          </span>
-        ) : null}
+          <div style={userStyle}>
+            <span>Olá, {user.nome}</span>
+            <NavLink 
+              to={`/authors/${slugify(user.nome)}`}
+              style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
+            >
+              Meus Artigos
+            </NavLink>
+            <button 
+              onClick={handleLogout} 
+              style={logoutButtonStyle}
+              onMouseOver={(e) => { e.target.style.backgroundColor = '#ff6464'; e.target.style.color = '#fff'; }}
+              onMouseOut={(e) => { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#ff6464'; }}
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <>
+            <NavLink 
+              to="/signup" 
+              style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
+            >
+              Sign Up
+            </NavLink>
+            <NavLink 
+              to="/login" 
+              style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
+            >
+              Login
+            </NavLink>
+          </>
+        )}
       </nav>
     </header>
   );

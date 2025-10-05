@@ -67,6 +67,11 @@ export const createEvent = (data) => apiClient.post('/evento', data);
 export const updateEvent = (id, data) => apiClient.post(`/evento/editar/${id}`, data);
 export const deleteEvent = (nome) => apiClient.post(`/evento/remover/${encodeURIComponent(nome)}`);
 
+// --- NOVAS FUNÇÕES PARA EDIÇÕES ---
+export const createEdition = (data) => apiClient.post('/evento/edicao/', data);
+export const updateEdition = (id, data) => apiClient.post(`/evento/edicao/editar/${id}`, data);
+export const deleteEdition = (id) => apiClient.post(`/evento/edicao/remover/${id}`);
+
 // Auth
 export const login = (payload) => apiClient.post('/auth/login', payload);
 export const subscribe = (payload) => apiClient.post('/subscriber/', payload);

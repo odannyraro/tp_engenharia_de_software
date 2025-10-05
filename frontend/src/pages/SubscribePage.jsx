@@ -4,7 +4,7 @@ import React from 'react';
 function SubscribePage() {
   return (
     <div>
-      <h1>Inscreva-se para Notificações</h1>
+      <h1>Cadastre-se</h1>
       {/* O formulário de inscrição virá aqui */}
     </div>
   );

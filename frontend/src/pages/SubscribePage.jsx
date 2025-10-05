@@ -2,6 +2,44 @@
 import React, { useState } from 'react';
 import { createAccount } from '../services/api';
 
+// --- Estilos Consistentes ---
+
+const cardStyle = {
+  background: '#2c2c2e',
+  borderRadius: '8px',
+  padding: '2rem',
+  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+  maxWidth: '450px',
+  margin: '4rem auto',
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '12px 20px',
+  margin: '8px 0 20px',
+  boxSizing: 'border-box',
+  fontSize: '1rem',
+  borderRadius: '25px',
+  border: '1px solid #555',
+  backgroundColor: '#333',
+  color: '#fff',
+};
+
+const buttonStyle = {
+  width: '100%',
+  padding: '12px 30px',
+  fontSize: '1.1rem',
+  borderRadius: '25px',
+  border: 'none',
+  backgroundColor: '#646cff',
+  color: '#fff',
+  cursor: 'pointer',
+  marginTop: '10px',
+  transition: 'background-color 0.3s',
+};
+
+// --- Componente Principal ---
+
 function SubscribePage() {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -15,7 +53,7 @@ function SubscribePage() {
     setStatus(null);
     setLoading(true);
     try {
-      // client-side validation
+      // Validações do lado do cliente
       if (senha.length < 5) {
         setStatus({ ok: false, message: 'A senha deve ter ao menos 5 caracteres.' });
         setLoading(false);
@@ -27,8 +65,10 @@ function SubscribePage() {
         return;
       }
 
-      const res = await createAccount({ nome, email, senha, admin: false });
+      await createAccount({ nome, email, senha, admin: false });
       setStatus({ ok: true, message: 'Conta criada com sucesso! Você pode agora fazer login.' });
+      
+      // Limpa os campos após o sucesso
       setNome('');
       setEmail('');
       setSenha('');
@@ -43,36 +83,67 @@ function SubscribePage() {
   };
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: 20 }}>
-  <h1>Crie sua conta</h1>
+    <div style={cardStyle}>
+      <h1 style={{ textAlign: 'center', marginTop: 0 }}>Crie sua Conta</h1>
+      
       <form onSubmit={handleSubmit}>
         <div style={{ marginBottom: 8 }}>
           <label>Nome completo</label>
-          <br />
-          <input value={nome} onChange={(e) => setNome(e.target.value)} required style={{ width: '100%' }} />
+          <input 
+            value={nome} 
+            onChange={(e) => setNome(e.target.value)} 
+            required 
+            style={inputStyle} 
+          />
         </div>
         <div style={{ marginBottom: 8 }}>
           <label>Email</label>
-          <br />
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%' }} />
+          <input 
+            type="email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+            style={inputStyle} 
+          />
         </div>
         <div style={{ marginBottom: 8 }}>
           <label>Senha</label>
-          <br />
-          <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} required style={{ width: '100%' }} minLength={5} />
+          <input 
+            type="password" 
+            value={senha} 
+            onChange={(e) => setSenha(e.target.value)} 
+            required 
+            style={inputStyle} 
+            minLength={5} 
+          />
         </div>
         <div style={{ marginBottom: 8 }}>
           <label>Confirme a senha</label>
-          <br />
-          <input type="password" value={senhaConfirm} onChange={(e) => setSenhaConfirm(e.target.value)} required style={{ width: '100%' }} minLength={5} />
+          <input 
+            type="password" 
+            value={senhaConfirm} 
+            onChange={(e) => setSenhaConfirm(e.target.value)} 
+            required 
+            style={inputStyle} 
+            minLength={5} 
+          />
         </div>
         <div>
-          <button type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Criar conta'}</button>
+          <button type="submit" disabled={loading} style={buttonStyle}>
+            {loading ? 'Criando...' : 'Criar conta'}
+          </button>
         </div>
       </form>
 
       {status && (
-        <p style={{ marginTop: 12, color: status.ok ? 'green' : 'red' }}>{status.message}</p>
+        <p style={{ 
+          marginTop: '1.5rem', 
+          textAlign: 'center',
+          color: status.ok ? '#28a745' : '#ff6464',
+          fontWeight: 'bold',
+        }}>
+          {status.message}
+        </p>
       )}
     </div>
   );

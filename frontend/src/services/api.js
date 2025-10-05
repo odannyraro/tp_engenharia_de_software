@@ -45,8 +45,8 @@ export const getRecentEvents = () => {
   return apiClient.get('/evento/recentes');
 };
 
-export const searchArticles = (query) => {
-  return apiClient.get(`/artigo/search?field=titulo&q=${query}`);
+export const searchArticles = (query, field = 'titulo') => {
+  return apiClient.get(`/artigo/artigo/search?field=${field}&q=${query}`);
 };
 
 export const searchEvents = (query) => {

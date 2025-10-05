@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from typing import List
 from schemas import EventoSchema, EdicaoEventoSchema
 from dependencies import pegar_sessao, verificar_token
 from models import Evento, Usuario, EdicaoEvento
@@ -115,3 +116,11 @@ async def editar_edicao(id_edicao: int, edicao_schema: EdicaoEventoSchema, sessi
     edicao.id_evento = edicao_schema.id_evento
     session.commit()
     return {"mensagem": f"Edição {id_edicao} editada com sucesso"}
+
+@evento_router.get("/list", response_model=List[EventoSchema])
+async def listar_eventos(session: Session = Depends(pegar_sessao)):
+    """
+    Lista todos os eventos cadastrados.
+    """
+    eventos = session.query(Evento).all()
+    return eventos

@@ -3,8 +3,12 @@ from dotenv import load_dotenv
 from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 import os
+from pathlib import Path
 
 load_dotenv()
+
+env_path = Path('.') / 'app' / '.env'
+load_dotenv(dotenv_path=env_path)
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")

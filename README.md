@@ -26,4 +26,5 @@ Banco de Dados = MySql
 - Criar API para cadastro de conta e login [Arthur]
 - Criar sistema de autenticação [Arthur]
 - Criar rotas para Evento [Arthur]
-  ...
+- Instalar React [Arthur]
+- Testar primeiras rotas e implementar primeira versão da tela principal e tela de Eventos [Filipe]

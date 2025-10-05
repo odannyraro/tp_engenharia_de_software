@@ -1,30 +1,27 @@
+// src/pages/EditionPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getEventEdition } from '../services/api';
+import ArticleList from '../components/ArticleList'; // Vamos usar o componente ArticleList para consistência
 
 function EditionPage() {
   const { eventName, year } = useParams();
   const [edition, setEdition] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchEdition = async () => {
-      console.log(`Fetching edition for: ${eventName}, ${year}`);
       setIsLoading(true);
       setError(null);
       try {
         const res = await getEventEdition(eventName, year);
-        console.log("API Response:", res);
         setEdition(res.data);
-        console.log("Edition state set:", res.data);
       } catch (err) {
-        setError('Falha ao buscar a edição.');
+        setError('Falha ao buscar os dados da edição.');
         console.error("API Error:", err);
-        console.log("Error response:", err.response);
       } finally {
         setIsLoading(false);
-        console.log("Finished fetching.");
       }
     };
 
@@ -43,19 +40,19 @@ function EditionPage() {
     return <p>Nenhuma edição encontrada.</p>;
   }
 
+  // Agora renderizamos as informações da edição e depois a lista de artigos
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px' }}>
-      <h1>{edition.evento_nome} - {edition.ano}</h1>
-      <h2>Artigos</h2>
-      <ul>
-        {edition.artigos.map(article => (
-          <li key={article.id}>
-            <h3>{article.titulo}</h3>
-            <p><strong>Autores:</strong> {article.autores.join(', ')}</p>
-            <p><strong>Resumo:</strong> {article.resumo}</p>
-          </li>
-        ))}
-      </ul>
+    <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px', textAlign: 'left' }}>
+      {/* Seção de Detalhes da Edição */}
+      <h1>{edition.evento_nome}</h1>
+      <div style={{ marginBottom: '30px', paddingBottom: '15px', borderBottom: '1px solid #ccc' }}>
+        <h2>Edição de {edition.ano}</h2>
+        {edition.local && <p><strong>Local:</strong> {edition.local}</p>}
+      </div>
+
+      {/* Seção de Artigos */}
+      <h2>Artigos Publicados</h2>
+      <ArticleList articles={edition.artigos} />
     </div>
   );
 }

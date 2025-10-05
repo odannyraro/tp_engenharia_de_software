@@ -29,5 +29,5 @@ export const getEventByName = (eventName) => {
 };
 
 export const getEventEdition = (eventName, year) => {
-  return apiClient.get(`/evento/${eventName}/${year}`);
+  return apiClient.get(`/edicao/${eventName}/${year}`);
 };

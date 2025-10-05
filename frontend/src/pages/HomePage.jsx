@@ -1,83 +1,112 @@
-// src/pages/HomePage.jsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import api from '../services/api';
-import SearchBar from '../components/SearchBar'; // Importa o componente real
-import ArticleList from '../components/ArticleList'; // Importa o componente real
+import { getRecentArticles, getRecentEvents, searchArticles, searchEvents } from '../services/api';
 
 function HomePage() {
   const [recentArticles, setRecentArticles] = useState([]);
   const [recentEvents, setRecentEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState({ articles: [], events: [] });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let isMounted = true; 
-
-    const fetchData = async () => {
-      setLoading(true);
+    const fetchInitialData = async () => {
       try {
-        const [articlesResponse, eventsResponse] = await Promise.all([
-          api.get('/artigo/search?field=titulo&q='),
-          api.get('/evento/list')
-        ]);
+        const articlesRes = await getRecentArticles();
+        setRecentArticles(articlesRes.data);
 
-        if (isMounted) {
-          const sortedArticles = articlesResponse.data.sort((a, b) => (b.ano || 0) - (a.ano || 0));
-          setRecentArticles(sortedArticles.slice(0, 5));
-
-          const sortedEvents = eventsResponse.data.sort((a, b) => b.id - a.id);
-          setRecentEvents(sortedEvents.slice(0, 5));
-        }
-
-      } catch (error) {
-        console.error("Erro ao buscar dados para a HomePage:", error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        const eventsRes = await getRecentEvents();
+        setRecentEvents(eventsRes.data);
+      } catch (err) {
+        setError('Falha ao buscar dados recentes.');
+        console.error(err);
       }
     };
 
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
+    fetchInitialData();
   }, []);
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults({ articles: [], events: [] });
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    try {
+      const articlesRes = await searchArticles(searchQuery);
+      const eventsRes = await searchEvents(searchQuery);
+      setSearchResults({
+        articles: articlesRes.data,
+        events: eventsRes.data,
+      });
+    } catch (err) {
+      setError('Falha ao realizar a busca.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div>
-      <h1>Biblioteca Digital de Artigos</h1>
-      <p>O seu portal para artigos e eventos científicos.</p>
-      
-      {/* Agora está usando os componentes reais importados */}
-      <SearchBar />
+    <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px' }}>
+      <h1>Biblioteca Digital</h1>
 
-      {loading ? (
-        <p>Carregando dados...</p>
-      ) : (
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '40px', marginTop: '40px' }}>
-          <section style={{ flex: 2 }}>
-            <h2>Artigos Mais Recentes</h2>
-            <ArticleList articles={recentArticles} />
-          </section>
+      <div style={{ marginBottom: '20px' }}>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Buscar artigos ou eventos..."
+          style={{ width: '300px', padding: '8px' }}
+        />
+        <button onClick={handleSearch} disabled={isLoading} style={{ padding: '8px 12px', marginLeft: '10px' }}>
+          {isLoading ? 'Buscando...' : 'Buscar'}
+        </button>
+      </div>
 
-          <section style={{ flex: 1 }}>
-            <h2>Eventos Recentes</h2>
-            <div style={{ textAlign: 'left' }}>
-              {recentEvents.length > 0 ? (
-                recentEvents.map(event => (
-                  <div key={event.id} style={{ marginBottom: '10px' }}>
-                    <Link to={`/events/${event.sigla.toLowerCase()}`}>
-                      {event.nome} ({event.sigla.toUpperCase()})
-                    </Link>
-                  </div>
-                ))
-              ) : (
-                <p>Nenhum evento para exibir.</p>
-              )}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+
+      {searchResults.articles.length > 0 || searchResults.events.length > 0 ? (
+        <div>
+          <h2>Resultados da Busca</h2>
+          {searchResults.articles.length > 0 && (
+            <div>
+              <h3>Artigos</h3>
+              <ul>
+                {searchResults.articles.map(article => (
+                  <li key={article.id}>{article.titulo} ({article.ano})</li>
+                ))}
+              </ul>
             </div>
-          </section>
+          )}
+          {searchResults.events.length > 0 && (
+            <div>
+              <h3>Eventos</h3>
+              <ul>
+                {searchResults.events.map(event => (
+                  <li key={event.id}>{event.nome}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>
+          <h2>Artigos mais recentes</h2>
+          <ul>
+            {recentArticles.map(article => (
+              <li key={article.id}>{article.titulo} ({article.ano})</li>
+            ))}
+          </ul>
+
+          <h2>Eventos mais recentes</h2>
+          <ul>
+            {recentEvents.map(event => (
+              <li key={event.id}>{event.nome}</li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

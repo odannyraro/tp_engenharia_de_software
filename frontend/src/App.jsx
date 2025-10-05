@@ -5,6 +5,7 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import ResultsPage from './pages/ResultsPage';
 import SubscribePage from './pages/SubscribePage';
+import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import EventPage from './pages/EventPage';
 import EditionPage from './pages/EditionPage';
@@ -16,7 +17,8 @@ function App() {
       <main>
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/subscribe" element={<SubscribePage />} />
+          <Route path="/signup" element={<SubscribePage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/events/:eventName" element={<EventPage />} />
           <Route path="/events/:eventName/:year" element={<EditionPage />} />

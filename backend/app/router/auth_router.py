@@ -57,8 +57,9 @@ async def login(login_schema: LoginSchema, session: Session = Depends(pegar_sess
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
-            "token_type": "Bearer"
-            }
+            "token_type": "Bearer",
+            "user": {"id": usuario.id, "nome": usuario.nome, "email": usuario.email, "admin": usuario.admin}
+        }
     
 @auth_router.post("/login-form")
 async def login_form(dados_formulario: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(pegar_sessao)):
@@ -79,3 +80,9 @@ async def use_refresh_token(usuario: Usuario = Depends(verificar_token)):
         "access_token": access_token,
         "token_type": "Bearer"
         }
+
+
+@auth_router.get('/me')
+async def me(usuario: Usuario = Depends(verificar_token)):
+    """Retorna informações do usuário autenticado."""
+    return {"id": usuario.id, "nome": usuario.nome, "email": usuario.email, "admin": usuario.admin}

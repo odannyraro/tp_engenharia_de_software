@@ -14,7 +14,7 @@ async def home():
     """
     return {"mensagem": "Você acessou a rota padrão para eventos"}
 
-@evento_router.post("/evento")
+@evento_router.post("/")
 async def criar_evento(evento_schema: EventoSchema, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):
     if not usuario.admin:
@@ -33,7 +33,7 @@ async def criar_evento(evento_schema: EventoSchema, session: Session = Depends(p
         return {"mensagem": f"Evento {evento_schema.nome} criado com sucesso"}
     
 
-@evento_router.post("/evento/remover/{nome_evento}")
+@evento_router.post("/remover/{nome_evento}")
 async def remover_evento(nome_evento: str, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):
     if not usuario.admin:
@@ -46,7 +46,7 @@ async def remover_evento(nome_evento: str, session: Session = Depends(pegar_sess
     return {"mensagem": f"Evento '{nome_evento}' removido com sucesso"}
 
 
-@evento_router.post("/evento/editar/{id_evento}")
+@evento_router.post("/editar/{id_evento}")
 async def editar_evento(id_evento: int, evento_schema: EventoSchema, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):
     if not usuario.admin:
@@ -65,7 +65,7 @@ async def editar_evento(id_evento: int, evento_schema: EventoSchema, session: Se
     return {"mensagem": f"Evento '{evento_schema.nome}' editado com sucesso"}
 
 
-@evento_router.post("/evento/edicao/")
+@evento_router.post("/edicao/")
 async def nova_edicao(edicao_schema: EdicaoEventoSchema, sessao: Session = Depends(pegar_sessao),
                       usuario: Usuario = Depends(verificar_token)):
     if not usuario.admin:
@@ -81,7 +81,7 @@ async def nova_edicao(edicao_schema: EdicaoEventoSchema, sessao: Session = Depen
 
     return {"mensagem": f"Nova edição do evento {evento.nome} criada"}
 
-@evento_router.post("/evento/edicao/remover/{id_edicao}")
+@evento_router.post("/edicao/remover/{id_edicao}")
 async def remover_edicao(id_edicao: int, sessao: Session = Depends(pegar_sessao),
                       usuario: Usuario = Depends(verificar_token)):
     if not usuario.admin:
@@ -97,7 +97,7 @@ async def remover_edicao(id_edicao: int, sessao: Session = Depends(pegar_sessao)
     return {'mensagem': f"Removido edição {id_edicao} do evento {evento.nome}"}
 
 
-@evento_router.post("/evento/edicao/editar/{id_edicao}")
+@evento_router.post("/edicao/editar/{id_edicao}")
 async def editar_edicao(id_edicao: int, edicao_schema: EdicaoEventoSchema, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):
     if not usuario.admin:

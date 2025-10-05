@@ -16,3 +16,14 @@ Banco de Dados = MySql
 - Samuel Miranda - Back-End
 - Daniel Rodrigues - Front-End
 - Arthur Quaresma - Banck-End
+
+
+# História #1: Como administrador, eu quero cadastrar (editar, deletar) um evento. (Exemplo: Simpósio Brasileiro de Engenharia de Software)
+# tarefas e responsáveis:
+- Entender como será a aplicação do banco de dados [Filipe]
+- Instalar FastAPI [Arthur]
+- Instalar banco de dados e criar classes e schemas para Usuário e Evento [Arthur]
+- Criar API para cadastro de conta e login [Arthur]
+- Criar sistema de autenticação [Arthur]
+- Criar rotas para Evento [Arthur]
+  ...

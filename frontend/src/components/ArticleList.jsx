@@ -22,11 +22,11 @@ function ArticleList({ articles, onEdit, onDelete }) {
               )}
             </h3>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button style={{ background: '#646cff', color: '#fff', border: 'none', borderRadius: '8px', padding: '4px 12px', cursor: 'pointer' }}
+              <button style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontWeight: 600 }}
                 onClick={() => onEdit && onEdit(article)}>
                 Editar
               </button>
-              <button style={{ background: '#ff6464', color: '#fff', border: 'none', borderRadius: '8px', padding: '4px 12px', cursor: 'pointer' }}
+              <button style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: '8px', padding: '6px 14px', cursor: 'pointer', fontWeight: 600 }}
                 onClick={() => onDelete && onDelete(article)}>
                 Deletar
               </button>

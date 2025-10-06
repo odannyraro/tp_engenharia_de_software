@@ -180,13 +180,20 @@ function HomePage() {
           <h2 style={listHeaderStyle}>{hasSearchResults ? 'Resultados de Artigos' : 'Artigos Mais Recentes'}</h2>
           <ul style={{ padding: 0, margin: 0 }}>
             {(hasSearchResults ? searchResults.articles : recentArticles).map(article => (
-              <li key={article.id} style={listItemStyle} 
+              <li key={article.id || article.titulo} style={listItemStyle}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3c3c3e'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <Link to="#" style={{ textDecoration: 'none', color: 'inherit' }}>
-                  <strong style={{ color: '#fff' }}>{article.titulo}</strong>
-                  <p style={{ margin: '4px 0', color: '#ccc' }}>{article.ano}</p>
-                </Link>
+                {article.id ? (
+                  <Link to={`/article/${article.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                    <strong style={{ color: '#fff' }}>{article.titulo}</strong>
+                    <p style={{ margin: '4px 0', color: '#ccc' }}>{article.ano}</p>
+                  </Link>
+                ) : (
+                  <div>
+                    <strong style={{ color: '#fff' }}>{article.titulo}</strong>
+                    <p style={{ margin: '4px 0', color: '#ccc' }}>{article.ano}</p>
+                  </div>
+                )}
               </li>
             ))}
           </ul>

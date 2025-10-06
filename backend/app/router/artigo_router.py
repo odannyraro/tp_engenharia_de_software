@@ -537,6 +537,7 @@ async def author_home(author_slug: str, session: Session = Depends(pegar_sessao)
         arts_sorted = sorted(arts, key=lambda x: (x.ano if x.ano is not None else -1, (x.titulo or '').lower()), reverse=True)
         serialized = [
             {
+                'id': getattr(a, 'id', None),
                 'titulo': a.titulo,
                 'autores': a.autores,
                 'nome_evento': a.nome_evento,
@@ -554,3 +555,26 @@ async def author_home(author_slug: str, session: Session = Depends(pegar_sessao)
         result['articles_by_year'].append({'year': y, 'articles': serialized})
 
     return result
+
+
+
+@artigo_router.get('/{id_artigo}')
+async def get_artigo(id_artigo: int, session: Session = Depends(pegar_sessao)):
+    artigo = session.query(Artigo).filter(Artigo.id == id_artigo).first()
+    if not artigo:
+        raise HTTPException(status_code=404, detail='Artigo não encontrado')
+
+    return {
+        'id': artigo.id,
+        'titulo': artigo.titulo,
+        'autores': artigo.autores,
+        'nome_evento': artigo.nome_evento,
+        'ano': artigo.ano,
+        'pagina_inicial': artigo.pagina_inicial,
+        'pagina_final': artigo.pagina_final,
+        'caminho_pdf': artigo.caminho_pdf,
+        'booktitle': getattr(artigo, 'booktitle', None),
+        'publisher': getattr(artigo, 'publisher', None),
+        'location': getattr(artigo, 'location', None),
+        'id_edicao': getattr(artigo, 'id_edicao', None)
+    }

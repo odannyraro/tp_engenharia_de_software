@@ -22,6 +22,8 @@ const modalContentStyle = {
   width: '90%',
   maxWidth: '500px',
   position: 'relative',
+  maxHeight: '90vh',
+  overflowY: 'auto',
 };
 
 const closeButtonStyle = {
@@ -48,14 +50,25 @@ const inputStyle = {
 };
 
 const buttonStyle = {
-  padding: '12px 30px',
+  padding: '12px 24px',
   fontSize: '1rem',
-  borderRadius: '25px',
+  borderRadius: '20px',
   border: 'none',
   backgroundColor: '#646cff',
   color: '#fff',
   cursor: 'pointer',
-  transition: 'background-color 0.3s',
+  transition: 'background-color 0.15s',
+  fontWeight: 600,
+};
+
+const cancelButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: '#555',
+};
+
+const saveButtonStyle = {
+  ...buttonStyle,
+  backgroundColor: '#2ea44f',
 };
 
 export default function ArticleForm({ onSave, onCancel, initial }) {
@@ -84,11 +97,18 @@ export default function ArticleForm({ onSave, onCancel, initial }) {
     e.preventDefault();
     const formData = new FormData();
     formData.append('titulo', titulo);
-    formData.append('autores', autores);
+    formData.append('autores', autores && autores.trim());
     formData.append('nome_evento', nomeEvento);
-    formData.append('ano', ano);
-    formData.append('pagina_inicial', paginaInicial);
-    formData.append('pagina_final', paginaFinal);
+    // Somente adiciona campos numéricos quando não vazios — evitar enviar '' que causa 422 no FastAPI
+    if (ano !== '' && ano !== null && typeof ano !== 'undefined') {
+      formData.append('ano', String(ano));
+    }
+    if (paginaInicial !== '' && paginaInicial !== null && typeof paginaInicial !== 'undefined') {
+      formData.append('pagina_inicial', String(paginaInicial));
+    }
+    if (paginaFinal !== '' && paginaFinal !== null && typeof paginaFinal !== 'undefined') {
+      formData.append('pagina_final', String(paginaFinal));
+    }
     // Se for edição, PDF é opcional
     if (pdf) {
       formData.append('pdf_file', pdf);
@@ -151,8 +171,8 @@ export default function ArticleForm({ onSave, onCancel, initial }) {
             {initial && <span style={{ color: '#aaa', fontSize: '0.9em' }}>(Deixe em branco para manter o PDF atual)</span>}
           </div>
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-            <button type="button" onClick={() => onCancel && onCancel()} style={{...buttonStyle, backgroundColor: '#555'}}>Cancelar</button>
-            <button type="submit" style={buttonStyle}>Salvar</button>
+            <button type="button" onClick={() => onCancel && onCancel()} style={cancelButtonStyle}>Cancelar</button>
+            <button type="submit" style={saveButtonStyle}>Salvar</button>
           </div>
         </form>
       </div>

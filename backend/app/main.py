@@ -33,11 +33,11 @@ app.add_middleware(
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_schema = OAuth2PasswordBearer(tokenUrl="auth/login-form")
 
-from app.router.auth_router import auth_router
-from app.router.evento_routher import evento_router
-from app.router.artigo_router import artigo_router
-from app.router.subscriber_router import subscriber_router
-from app.router.edition_router import edition_router
+from router.auth_router import auth_router
+from router.evento_routher import evento_router
+from router.artigo_router import artigo_router
+from router.subscriber_router import subscriber_router
+from router.edition_router import edition_router
 
 app.include_router(auth_router)
 app.include_router(evento_router)

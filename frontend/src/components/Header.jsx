@@ -128,10 +128,10 @@ function Header() {
         
         {/* Seção do Usuário */}
         <NavLink 
-          to="/notifications/signup" 
+          to="/author-area" 
           style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
         >
-          Assinar Notificações
+          Author Area
         </NavLink>
         
         {user ? (

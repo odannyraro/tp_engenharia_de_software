@@ -10,6 +10,7 @@ import AdminPage from './pages/AdminPage';
 import EventPage from './pages/EventPage';
 import EditionPage from './pages/EditionPage';
 import ArticleDetail from './pages/ArticleDetail';
+import AuthorAreaPage from './pages/AuthorAreaPage';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
           <Route path="/events/:eventName" element={<EventPage />} />
           <Route path="/events/:eventName/:year" element={<EditionPage />} />
           <Route path="/article/:id" element={<ArticleDetail />} />
+          <Route path="/author-area" element={<AuthorAreaPage />} />
           {/* Rotas dinâmicas para resultados */}
           <Route path="/search" element={<ResultsPage />} />
           <Route path="/authors/:authorName" element={<ResultsPage />} />

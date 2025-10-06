@@ -16,7 +16,7 @@ function EventPage() {
         const res = await getEventByName(eventName);
         setEvent(res.data);
       } catch (err) {
-        setError('Falha ao buscar o evento.');
+        setError('Falha ao buscar o evento, ou o evento não possui edições cadastradas');
         console.error(err);
       } finally {
         setIsLoading(false);

@@ -45,8 +45,8 @@ export const getRecentEvents = () => {
   return apiClient.get('/evento/recentes');
 };
 
-export const searchArticles = (query) => {
-  return apiClient.get(`/artigo/search?field=titulo&q=${query}`);
+export const searchArticles = (query, field = 'titulo') => {
+  return apiClient.get(`/artigo/artigo/search?field=${field}&q=${query}`);
 };
 
 export const searchEvents = (query) => {
@@ -58,7 +58,7 @@ export const getEventByName = (eventName) => {
 };
 
 export const getEventEdition = (eventName, year) => {
-  return apiClient.get(`/edicao/${eventName}/${year}`);
+  return apiClient.get(`/edicao/${encodeURIComponent(eventName)}/${year}`);
 };
 
 // Event CRUD
@@ -66,6 +66,11 @@ export const listEvents = () => apiClient.get('/evento/recentes');
 export const createEvent = (data) => apiClient.post('/evento', data);
 export const updateEvent = (id, data) => apiClient.post(`/evento/editar/${id}`, data);
 export const deleteEvent = (nome) => apiClient.post(`/evento/remover/${encodeURIComponent(nome)}`);
+
+// --- NOVAS FUNÇÕES PARA EDIÇÕES ---
+export const createEdition = (data) => apiClient.post('/evento/edicao/', data);
+export const updateEdition = (id, data) => apiClient.post(`/evento/edicao/editar/${id}`, data);
+export const deleteEdition = (id) => apiClient.post(`/evento/edicao/remover/${id}`);
 
 // Auth
 export const login = (payload) => apiClient.post('/auth/login', payload);

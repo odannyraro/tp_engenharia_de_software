@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getEventEdition } from '../services/api';
-import ArticleList from '../components/ArticleList'; // Vamos usar o componente ArticleList para consistência
+import ArticleList from '../components/ArticleList';
 
 function EditionPage() {
   const { eventName, year } = useParams();
@@ -40,7 +40,6 @@ function EditionPage() {
     return <p>Nenhuma edição encontrada.</p>;
   }
 
-  // Agora renderizamos as informações da edição e depois a lista de artigos
   return (
     <div style={{ fontFamily: 'Arial, sans-serif', margin: '0 auto', maxWidth: '800px', padding: '20px', textAlign: 'left' }}>
       {/* Seção de Detalhes da Edição */}

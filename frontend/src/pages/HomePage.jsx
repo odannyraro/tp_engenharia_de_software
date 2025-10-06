@@ -67,18 +67,68 @@ function HomePage() {
     }
     setIsLoading(true);
     setError(null);
+
     try {
-      const [articlesRes, eventsRes] = await Promise.all([
-        searchArticles(searchQuery),
+      // Usaremos Promise.allSettled para garantir que todas as chamadas terminem,
+      // mesmo que algumas falhem. Isso é ideal para depuração.
+      const promises = [
+        searchArticles(searchQuery, 'titulo'),
+        searchArticles(searchQuery, 'autor'),
+        searchArticles(searchQuery, 'evento'),
         searchEvents(searchQuery),
-      ]);
+      ];
+
+      const results = await Promise.allSettled(promises);
+
+      // Verificando se alguma das chamadas falhou
+      const failedPromises = results.filter(result => result.status === 'rejected');
+
+      if (failedPromises.length > 0) {
+        // Se houver falhas, criamos uma mensagem de erro detalhada
+        let detailedError = "Ocorreram erros durante a busca:\n";
+        failedPromises.forEach(failure => {
+          const error = failure.reason;
+          const config = error.config; // Detalhes da requisição feita pelo axios
+          const response = error.response; // Detalhes da resposta do servidor
+          
+          detailedError += `\n- URL: ${config.method.toUpperCase()} ${config.url}\n`;
+          if (response) {
+            detailedError += `  - Status: ${response.status} (${response.statusText})\n`;
+            detailedError += `  - Detalhe do Servidor: ${JSON.stringify(response.data.detail)}\n`;
+          } else {
+            detailedError += `  - Erro: Não foi possível conectar ao servidor. Verifique se o backend está rodando e acessível em ${config.baseURL}.\n`;
+          }
+        });
+        throw new Error(detailedError);
+      }
+
+      // Se todas as chamadas foram bem-sucedidas, processamos os dados
+      const [
+        articlesTitleRes,
+        articlesAuthorRes,
+        articlesEventRes,
+        eventsRes
+      ] = results.map(result => result.value);
+
+      const allArticles = [
+        ...articlesTitleRes.data,
+        ...articlesAuthorRes.data,
+        ...articlesEventRes.data,
+      ];
+      const uniqueArticles = allArticles.filter(
+        (article, index, self) =>
+          index === self.findIndex((a) => a.id === article.id)
+      );
+
       setSearchResults({
-        articles: articlesRes.data,
+        articles: uniqueArticles,
         events: eventsRes.data,
       });
+
     } catch (err) {
-      setError('Falha ao realizar a busca.');
-      console.error(err);
+      // Agora, o erro exibido será muito mais informativo
+      console.error("ERRO DETALHADO:", err.message);
+      setError(err.message); // Exibe o erro detalhado na tela
     } finally {
       setIsLoading(false);
     }
@@ -152,9 +202,9 @@ function HomePage() {
               <li key={event.id} style={listItemStyle}
                   onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#3c3c3e'}
                   onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
-                <Link to={`/events/${event.sigla.toLowerCase()}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Link to={`/events/${event.nome}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                   <strong style={{ color: '#fff' }}>{event.nome}</strong>
-                  <p style={{ margin: '4px 0', color: '#aaa' }}>{event.sigla.toUpperCase()}</p>
+                  <p style={{ margin: '4px 0', color: '#aaa' }}>{event.sigla ? event.sigla.toUpperCase() : ''}</p>
                 </Link>
               </li>
             ))}

@@ -12,6 +12,7 @@ import EditionForm from '../components/EditionForm';
 import ArticleManager from '../components/ArticleManager';
 import ArticleList from '../components/ArticleList';
 import ArticleForm from '../components/ArticleForm';
+import ImportArticlesForm from '../components/ImportArticlesForm';
 
 // --- Estilos Consistentes ---
 
@@ -103,6 +104,7 @@ function AdminPage() {
   const [articles, setArticles] = useState([]);
   const [showArticleForm, setShowArticleForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState(null);
+  const [showImportForm, setShowImportForm] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -391,7 +393,13 @@ function AdminPage() {
             <div style={{ flex: 1 }}>
               <ArticleManager 
                 onAddArticle={handleOpenArticleForm}
+                onImportArticles={() => setShowImportForm(true)}
               />
+              {showImportForm && (
+                <ImportArticlesForm 
+                  onCancel={() => setShowImportForm(false)}
+                />
+              )}
               {showArticleForm && (
                 <ArticleForm 
                   onSave={handleSaveArticle}

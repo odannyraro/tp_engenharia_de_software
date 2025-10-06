@@ -101,14 +101,15 @@ def _notificar_subscribers(session: Session, artigo_schema: ArtigoSchema):
     Notifica subscribers cujo nome case exatamente com algum autor do artigo.
     Mantida síncrona, deve ser chamada via threadpool se for muito lenta.
     """
+    messages = []
     try:
         subscribers = session.query(Subscriber).all()
         artigo_autores = artigo_schema.autores
 
-        def normalize(name: str):
+        def normalize(name: str) -> str:
             return ' '.join(name.strip().split())
 
-        autores_list = [p.strip() for p in artigo_autores.split(' and ') if p.strip()]
+        autores_list = [p.strip() for p in (artigo_autores or '').split(' and ') if p.strip()]
 
         matched = []
         for sub in subscribers:
@@ -145,12 +146,18 @@ def _notificar_subscribers(session: Session, artigo_schema: ArtigoSchema):
                     for u in matched:
                         msg['To'] = u.email
                         server.send_message(msg)
+                        messages.append(f"Enviado email para {u.email} sobre o novo artigo criado {artigo_schema.titulo}")
             else:
                 for u in matched:
-                    print(f"[NOTIFY] Enviar email para {u.email}: {subject} - {body}")
+                    # Log/print fallback and also record message to return
+                    msg_text = f"Enviado email para {u.email} sobre o novo artigo criado: {artigo_schema.titulo}"
+                    print(f"[NOTIFY] {msg_text}")
+                    messages.append(msg_text)
     except Exception as e:
         print(f"Erro ao notificar subscribers: {e}")
         # Esta função não deve levantar exceção para não quebrar a transação de BD
+
+    return messages
 
 # FUNÇÃO CORE: Lógica de Validação e Inserção (mantida)
 def _cadastrar_artigo_core(session: Session, artigo_schema: ArtigoSchema) -> str:
@@ -198,13 +205,8 @@ def _cadastrar_artigo_core(session: Session, artigo_schema: ArtigoSchema) -> str
     artigo_data['id_edicao'] = edicao.id
     
     # Instancia o modelo Artigo
-    novo_artigo = Artigo(**artigo_data) 
-    
+    novo_artigo = Artigo(**artigo_data)
     session.add(novo_artigo)
-    
-    # 5. Notificação
-    _notificar_subscribers(session, artigo_schema)
-    
     return novo_artigo.titulo
 
 # =========================================================================
@@ -264,6 +266,8 @@ async def criar_artigo(
     )
     try:
         titulo_cadastrado = await run_in_threadpool(_cadastrar_artigo_core, session, artigo_schema)
+        # Notifica subscribers e captura mensagens
+        notificacoes = await run_in_threadpool(_notificar_subscribers, session, artigo_schema)
         session.commit()
     except HTTPException:
         session.rollback()
@@ -275,7 +279,7 @@ async def criar_artigo(
         if caminho_pdf_salvo and os.path.exists(caminho_pdf_salvo):
             os.remove(caminho_pdf_salvo)
         raise HTTPException(status_code=500, detail=f"Erro interno ao cadastrar artigo: {e}")
-    return {"mensagem": f"Artigo {titulo_cadastrado} incluído com sucesso no evento {nome_evento}", "caminho_pdf": caminho_pdf_salvo}
+    return {"mensagem": f"Artigo {titulo_cadastrado} incluído com sucesso no evento {nome_evento}", "caminho_pdf": caminho_pdf_salvo, "notificacoes": notificacoes}
 
 # ENDPOINT: Importar múltiplos artigos via BibTeX
 @artigo_router.post("/artigo/importar-bibtex")
@@ -306,6 +310,7 @@ async def importar_bibtex(
     
     titulos_cadastrados = []
     artigos_pulados: List[Dict[str, str]] = []
+    notificacoes_por_artigo: List[Dict[str, Any]] = []
     
     pdf_file_map: Dict[str, str] = {}
     # Inicializa a variável que será limpa no final
@@ -379,7 +384,14 @@ async def importar_bibtex(
             try:
                 # O _cadastrar_artigo_core já chama a notificação
                 titulo_cadastrado = await run_in_threadpool(_cadastrar_artigo_core, session, artigo_schema)
+                # Notifica e coleciona mensagens para este artigo
+                msgs = await run_in_threadpool(_notificar_subscribers, session, artigo_schema)
                 titulos_cadastrados.append(titulo_cadastrado)
+                if msgs:
+                    notificacoes_por_artigo.append({
+                        'titulo': artigo_schema.titulo,
+                        'notificacoes': msgs
+                    })
                 
             except HTTPException as e:
                 artigos_pulados.append({
@@ -407,13 +419,16 @@ async def importar_bibtex(
     
     if artigos_pulados:
         mensagem_final += f" {len(artigos_pulados)} artigo(s) foram pulados. Veja o relatório."
+    if notificacoes_por_artigo:
+        mensagem_final += f" {len(notificacoes_por_artigo)} artigo(s) geraram notificações de subscribers."
 
     return {
         "mensagem": mensagem_final, 
         "total_cadastrados": len(titulos_cadastrados), 
         "titulos_cadastrados": titulos_cadastrados,
         "total_pulados": len(artigos_pulados),
-        "relatorio_erros": artigos_pulados
+        "relatorio_erros": artigos_pulados,
+        "notificacoes": notificacoes_por_artigo
     }
 
 # ... (Endpoints listar, remover, editar, pesquisar e author_home permanecem iguais)

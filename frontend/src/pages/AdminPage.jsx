@@ -103,6 +103,23 @@ function AdminPage() {
   const [articles, setArticles] = useState([]);
   const [showArticleForm, setShowArticleForm] = useState(false);
   const [editingArticle, setEditingArticle] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [lastResponse, setLastResponse] = useState(null);
+  const [toasts, setToasts] = useState([]);
+
+  const addToast = (text) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+    const item = { id, text };
+    setToasts((cur) => [item, ...cur]);
+    // auto remove after 5 seconds
+    setTimeout(() => {
+      setToasts((cur) => cur.filter(t => t.id !== id));
+    }, 5000);
+  };
+
+  const removeToast = (id) => {
+    setToasts((cur) => cur.filter(t => t.id !== id));
+  };
 
   const load = async () => {
     setLoading(true);
@@ -141,22 +158,43 @@ function AdminPage() {
     try {
       if (id) {
         // Editar artigo
-        await fetch(`http://localhost:8000/artigo/artigo/editar/${id}`, {
+        const res = await fetch(`http://localhost:8000/artigo/artigo/editar/${id}`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           },
           body: formData
         });
+        let body = {};
+        try { body = await res.json(); } catch (e) { body = {}; }
+        setLastResponse({ status: res.status, body });
+        if (!res.ok) {
+          setError(body?.detail || body?.mensagem || 'Erro ao editar artigo');
+        }
+        if (body.notificacoes && Array.isArray(body.notificacoes) && body.notificacoes.length) {
+          setNotifications((cur) => [...body.notificacoes, ...cur]);
+          body.notificacoes.forEach(n => addToast(n));
+        }
       } else {
         // Criar artigo
-        await fetch(`http://localhost:8000/artigo/artigo`, {
+        const res = await fetch(`http://localhost:8000/artigo/artigo`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           },
           body: formData
         });
+        // parse response body to capture notificacoes
+        let body = {};
+        try { body = await res.json(); } catch (e) { body = {}; }
+        setLastResponse({ status: res.status, body });
+        if (!res.ok) {
+          setError(body?.detail || body?.mensagem || 'Erro ao criar artigo');
+        }
+        if (body.notificacoes && Array.isArray(body.notificacoes) && body.notificacoes.length) {
+          setNotifications((cur) => [...body.notificacoes, ...cur]);
+          body.notificacoes.forEach(n => addToast(n));
+        }
       }
       setShowArticleForm(false);
       setEditingArticle(null);
@@ -165,6 +203,60 @@ function AdminPage() {
       setArticles(res.data || []);
     } catch (err) {
       setError('Erro ao salvar artigo');
+    }
+  };
+
+  // Handler para importar BibTeX + ZIP via um file picker simples
+  const handleImportArticles = async () => {
+    try {
+      // Cria input temporário para escolher dois arquivos (.bib e .zip)
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.multiple = true;
+      input.accept = '.bib,application/zip,application/x-zip-compressed';
+      input.onchange = async (e) => {
+        const files = Array.from(e.target.files || []);
+        const bib = files.find(f => f.name.toLowerCase().endsWith('.bib'));
+        const zip = files.find(f => f.name.toLowerCase().endsWith('.zip'));
+        if (!bib || !zip) {
+          setError('Selecione um arquivo .bib e um .zip contendo os PDFs.');
+          return;
+        }
+        const fd = new FormData();
+        fd.append('bibtex_file', bib);
+        fd.append('pdf_zip_file', zip);
+        try {
+          const res = await fetch('http://localhost:8000/artigo/importar-bibtex', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            },
+            body: fd
+          });
+          const body = await res.json();
+          // Backend returns notificacoes: [ { titulo, notificacoes: [..] }, ... ]
+          if (body.notificacoes && Array.isArray(body.notificacoes)) {
+            const flat = [];
+            for (const item of body.notificacoes) {
+              if (item.notificacoes && Array.isArray(item.notificacoes)) {
+                flat.push(...item.notificacoes);
+              }
+            }
+            if (flat.length) setNotifications((cur) => [...flat, ...cur]);
+            if (flat.length) flat.forEach(n => addToast(n));
+          }
+          // refresh article list
+          const res2 = await getRecentArticles();
+          setArticles(res2.data || []);
+        } catch (err) {
+          setError('Falha ao importar pacotes de artigos');
+          console.error(err);
+        }
+      };
+      // dispara o diálogo
+      input.click();
+    } catch (err) {
+      setError('Erro ao iniciar importação');
     }
   };
 
@@ -293,6 +385,7 @@ function AdminPage() {
 
 
   return (
+    <>
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1>Painel do Administrador</h1>
@@ -391,6 +484,7 @@ function AdminPage() {
             <div style={{ flex: 1 }}>
               <ArticleManager 
                 onAddArticle={handleOpenArticleForm}
+                onImportArticles={handleImportArticles}
               />
               {showArticleForm && (
                 <ArticleForm 
@@ -428,11 +522,44 @@ function AdminPage() {
                   }}
                 />
               </div>
+              {notifications.length > 0 && (
+                <div style={{ ...cardStyle, marginTop: '1rem' }}>
+                  <h3 style={{ marginTop: 0 }}>Notificações de Subscribers</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {notifications.map((n, i) => (
+                      <div key={i} style={{ background: '#111', padding: '8px 12px', borderRadius: '6px', color: '#e6f4ea' }}>
+                        {n}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setNotifications([])} style={{ ...buttonStyle, backgroundColor: '#555' }}>Limpar</button>
+                  </div>
+                </div>
+              )}
+              {lastResponse && (
+                <div style={{ ...cardStyle, marginTop: '1rem' }}>
+                  <h3 style={{ marginTop: 0 }}>DEBUG: Última resposta do servidor</h3>
+                  <pre style={{ color: '#ddd', whiteSpace: 'pre-wrap', fontSize: '0.9rem' }}>{JSON.stringify(lastResponse, null, 2)}</pre>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
+  </div>
+  {/* Toast container (fixed top-right) */}
+    <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 2000, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {toasts.map(t => (
+        <div key={t.id} style={{ background: 'linear-gradient(180deg,#1f2937,#111827)', color: '#fff', padding: '10px 14px', borderRadius: 8, boxShadow: '0 6px 18px rgba(0,0,0,0.35)', minWidth: 280, maxWidth: 'min(420px,calc(100vw - 40px))' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div style={{ fontSize: '0.95rem', lineHeight: 1.2 }}>{t.text}</div>
+            <button onClick={() => removeToast(t.id)} style={{ marginLeft: 12, background: 'transparent', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>✕</button>
+          </div>
+        </div>
+      ))}
     </div>
+    </>
   );
 }
 

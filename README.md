@@ -17,7 +17,9 @@ Banco de Dados = SQLite
 - Daniel Rodrigues - Front-End
 - Arthur Quaresma - Banck-End
 
+# Diagrama de Sequencia - Cadastro Evento 
 
+<img width="1047" height="530" alt="diagrama sequencia cadastro evento" src="https://github.com/user-attachments/assets/8731736a-71c1-40bd-8fa1-4311226c4046" />
 
 
 # História #1: Como administrador, eu quero cadastrar (editar, deletar) um evento. (Exemplo: Simpósio Brasileiro de Engenharia de Software)

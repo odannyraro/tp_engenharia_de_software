@@ -63,6 +63,7 @@ class ArtigoSchema(BaseModel):
         from_attributes = True
 
 class ResponseArtigoSchema(BaseModel):
+    id: Optional[int] = None
     titulo: str
     autores: str
     nome_evento: str

@@ -22,6 +22,11 @@ Banco de Dados = SQLite
 <img width="1047" height="530" alt="diagrama sequencia cadastro evento" src="https://github.com/user-attachments/assets/8731736a-71c1-40bd-8fa1-4311226c4046" />
 
 
+# Diagrama de Pacotes
+
+<img width="912" height="675" alt="diagrama arquitetura" src="https://github.com/user-attachments/assets/d35710f8-a3eb-4b0a-b90b-6b1462b1b89c" />
+
+
 # História #1: Como administrador, eu quero cadastrar (editar, deletar) um evento. (Exemplo: Simpósio Brasileiro de Engenharia de Software)
 # Tarefas e Responsáveis:
 - Entender como será a aplicação do banco de dados [Filipe]

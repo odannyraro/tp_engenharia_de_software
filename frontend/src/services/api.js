@@ -76,3 +76,7 @@ export const deleteEdition = (id) => apiClient.post(`/evento/edicao/remover/${id
 export const login = (payload) => apiClient.post('/auth/login', payload);
 export const subscribe = (payload) => apiClient.post('/subscriber/', payload);
 export const createAccount = (payload) => apiClient.post('/auth/criar_conta', payload);
+
+// Artigo - envio multipart
+export const createArticle = (formData) =>
+  apiClient.post('/artigo/artigo', formData, { headers: { 'Content-Type': 'multipart/form-data' } });

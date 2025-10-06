@@ -139,8 +139,10 @@ function HomePage() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1>Biblioteca Digital</h1>
-        <p style={{ fontSize: '1.2rem', color: '#aaa' }}>Seu portal para artigos e eventos científicos.</p>
+        <h1>LattesCinius</h1>
+        <p style={{ fontSize: '1.2rem', color: '#aaa' }}>
+          Seu portal para <em style={{ fontWeight: 'bold' }}>a nata</em> da produção científica.
+        </p>
       </div>
 
       <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '40px' }}>

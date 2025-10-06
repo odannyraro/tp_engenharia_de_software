@@ -42,6 +42,32 @@ class EdicaoEventoSchema(BaseModel):
         from_attributes = True
 
 class ArtigoSchema(BaseModel):
+    @classmethod
+    def as_form(
+        cls,
+        titulo: str = Field(..., min_length=5),
+        autores: str = Field(..., description="Nomes completos dos autores separados por ' and '"),
+        nome_evento: str = Field(..., description="Nome do evento onde o artigo foi publicado"),
+        ano: Optional[int] = None,
+        pagina_inicial: Optional[int] = None,
+        pagina_final: Optional[int] = None,
+        caminho_pdf: Optional[str] = None,
+        booktitle: Optional[str] = None,
+        publisher: Optional[str] = None,
+        location: Optional[str] = None,
+    ):
+        return cls(
+            titulo=titulo,
+            autores=autores,
+            nome_evento=nome_evento,
+            ano=ano,
+            pagina_inicial=pagina_inicial,
+            pagina_final=pagina_final,
+            caminho_pdf=caminho_pdf,
+            booktitle=booktitle,
+            publisher=publisher,
+            location=location,
+        )
     """
     Representa um artigo científico publicado em uma edição de um evento.
     """

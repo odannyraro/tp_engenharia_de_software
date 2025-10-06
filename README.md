@@ -48,7 +48,6 @@ Banco de Dados = SQLite
 
 # História #5: Como usuário, eu quero pesquisar por artigos: por título, por autor e por nome de evento
 # Tarefas e Responsáveis:
-- Entender como será a aplicação do banco de dados [Filipe]
 - Instalar banco de dados e criar classes e schemas para Usuário e Evento [Arthur]
 - Criar rotas para Artigos [Arthur / Filipe]
 - Criar interface, design e estrutura do frontend para a tela [Filipe]

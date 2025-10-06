@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
+from fastapi import Form
 from schemas import ArtigoSchema, ResponseArtigoSchema
 from dependencies import pegar_sessao, verificar_token
 from models import Artigo, Usuario, Subscriber, Evento, EdicaoEvento
@@ -220,8 +221,17 @@ async def home():
 # ENDPOINT: Criar artigo (ATUALIZADO PARA RECEBER PDF)
 @artigo_router.post("/artigo")
 async def criar_artigo(
-    artigo_schema: ArtigoSchema = Depends(), # Usamos Depends() para receber o JSON do corpo
-    pdf_file: UploadFile = File(..., description="Arquivo PDF do artigo"), # Recebe o arquivo
+    titulo: str = Form(...),
+    autores: str = Form(...),
+    nome_evento: str = Form(...),
+    ano: Optional[int] = Form(None),
+    pagina_inicial: Optional[int] = Form(None),
+    pagina_final: Optional[int] = Form(None),
+    caminho_pdf: Optional[str] = Form(None),
+    booktitle: Optional[str] = Form(None),
+    publisher: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    pdf_file: UploadFile = File(..., description="Arquivo PDF do artigo"),
     session: Session = Depends(pegar_sessao),
     usuario: Usuario = Depends(verificar_token)
 ):
@@ -230,53 +240,42 @@ async def criar_artigo(
     """
     if not usuario.admin:
         raise HTTPException(status_code=401, detail="Você não tem autorização para fazer essa modificação")
-    
     if pdf_file.content_type != 'application/pdf':
         raise HTTPException(status_code=400, detail="O arquivo deve ser um PDF (application/pdf).")
-        
-    # Gera um nome de arquivo único/seguro (ex: ID do artigo depois do commit, mas aqui usamos o título)
-    # ATENÇÃO: Em produção, um UUID ou nome seguro é preferível.
-    # Por simplicidade, usamos o título.
-    filename = f"{artigo_schema.titulo.lower().replace(' ', '_')}_{pdf_file.filename}"
-    
-    # 1. Salvar o PDF no disco (em uma thread separada)
+    filename = f"{titulo.lower().replace(' ', '_')}_{pdf_file.filename}"
     caminho_pdf_salvo = None
     try:
-        # Salva o arquivo em disco ANTES de tentar o commit no BD
         caminho_pdf_salvo = await run_in_threadpool(_salvar_pdf_sincrono_file, pdf_file, filename)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo PDF: {e}")
     finally:
-        # Garante que o arquivo temporário do upload seja fechado
         await pdf_file.close()
-
-    # 2. Atualiza o schema com o caminho do PDF salvo
-    # Isso garante que o caminho correto seja persistido no BD
-    artigo_schema.caminho_pdf = caminho_pdf_salvo
-    
-    # 3. Executa a lógica core de validação e adição ao BD
+    artigo_schema = ArtigoSchema(
+        titulo=titulo,
+        autores=autores,
+        nome_evento=nome_evento,
+        ano=ano,
+        pagina_inicial=pagina_inicial,
+        pagina_final=pagina_final,
+        caminho_pdf=caminho_pdf_salvo,
+        booktitle=booktitle,
+        publisher=publisher,
+        location=location,
+    )
     try:
-        # Executa a lógica core em uma thread separada para evitar bloqueio do asyncio
         titulo_cadastrado = await run_in_threadpool(_cadastrar_artigo_core, session, artigo_schema)
-        
-        # O commit é feito APÓS a lógica core ser bem-sucedida
         session.commit()
-        
     except HTTPException:
-        # Se houve erro de validação (HTTPException) no core, faz o rollback do BD e...
         session.rollback()
-        # DEVE-SE TAMBÉM remover o arquivo salvo, se for o caso!
         if caminho_pdf_salvo and os.path.exists(caminho_pdf_salvo):
-             os.remove(caminho_pdf_salvo)
+            os.remove(caminho_pdf_salvo)
         raise
     except Exception as e:
         session.rollback()
         if caminho_pdf_salvo and os.path.exists(caminho_pdf_salvo):
-             os.remove(caminho_pdf_salvo)
+            os.remove(caminho_pdf_salvo)
         raise HTTPException(status_code=500, detail=f"Erro interno ao cadastrar artigo: {e}")
-
-    return {"mensagem": f"Artigo {titulo_cadastrado} incluído com sucesso no evento {artigo_schema.nome_evento}",
-            "caminho_pdf": caminho_pdf_salvo}
+    return {"mensagem": f"Artigo {titulo_cadastrado} incluído com sucesso no evento {nome_evento}", "caminho_pdf": caminho_pdf_salvo}
 
 # ENDPOINT: Importar múltiplos artigos via BibTeX
 @artigo_router.post("/artigo/importar-bibtex")
@@ -443,18 +442,55 @@ async def remover_artigo(id_artigo: int, session: Session = Depends(pegar_sessao
 
 # ENDPOINT: Editar artigo
 @artigo_router.post("/artigo/editar/{id_artigo}")
-async def editar_artigo(id_artigo: int, artigo_schema: ArtigoSchema, session: Session = Depends(pegar_sessao),
-                       usuario: Usuario = Depends(verificar_token)):
+async def editar_artigo(
+    id_artigo: int,
+    titulo: str = Form(...),
+    autores: str = Form(...),
+    nome_evento: str = Form(...),
+    ano: Optional[int] = Form(None),
+    pagina_inicial: Optional[int] = Form(None),
+    pagina_final: Optional[int] = Form(None),
+    caminho_pdf: Optional[str] = Form(None),
+    booktitle: Optional[str] = Form(None),
+    publisher: Optional[str] = Form(None),
+    location: Optional[str] = Form(None),
+    pdf_file: Optional[UploadFile] = File(None),
+    session: Session = Depends(pegar_sessao),
+    usuario: Usuario = Depends(verificar_token)
+):
     if not usuario.admin:
         raise HTTPException(status_code=401, detail="Você não tem autorização para fazer essa modificação")
-    
     artigo = session.query(Artigo).filter(Artigo.id == id_artigo).first()
     if not artigo:
         raise HTTPException(status_code=400, detail="Não existe artigo com esse ID")
-    
-    # Atualiza somente os campos definidos no novo esquema
-    for key, value in artigo_schema.model_dump().items():
-        setattr(artigo, key, value)
+    # Atualiza campos
+    artigo.titulo = titulo
+    artigo.autores = autores
+    artigo.nome_evento = nome_evento
+    artigo.ano = ano
+    artigo.pagina_inicial = pagina_inicial
+    artigo.pagina_final = pagina_final
+    artigo.booktitle = booktitle
+    artigo.publisher = publisher
+    artigo.location = location
+    # Atualiza PDF se enviado
+    if pdf_file:
+        if pdf_file.content_type != 'application/pdf':
+            raise HTTPException(status_code=400, detail="O arquivo deve ser um PDF (application/pdf).")
+        filename = f"{titulo.lower().replace(' ', '_')}_{pdf_file.filename}"
+        try:
+            caminho_pdf_salvo = await run_in_threadpool(_salvar_pdf_sincrono_file, pdf_file, filename)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Erro ao salvar arquivo PDF: {e}")
+        finally:
+            await pdf_file.close()
+        # Remove PDF antigo se existir
+        if artigo.caminho_pdf and os.path.exists(artigo.caminho_pdf):
+            try:
+                os.remove(artigo.caminho_pdf)
+            except Exception as e:
+                print(f"AVISO: Falha ao remover arquivo PDF antigo {artigo.caminho_pdf}: {e}")
+        artigo.caminho_pdf = caminho_pdf_salvo
     session.commit()
     return {"mensagem": f"Artigo '{id_artigo}' editado com sucesso"}
 

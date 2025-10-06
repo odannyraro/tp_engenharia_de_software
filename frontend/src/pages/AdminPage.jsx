@@ -3,10 +3,15 @@ import React, { useEffect, useState } from 'react';
 import { 
   listEvents, createEvent, updateEvent, deleteEvent, getEventByName,
   createEdition, updateEdition, deleteEdition,
-  login, setAuthToken 
+  login, setAuthToken,
+  getRecentArticles,
+  createArticle
 } from '../services/api';
 import EventForm from '../components/EventForm';
 import EditionForm from '../components/EditionForm';
+import ArticleManager from '../components/ArticleManager';
+import ArticleList from '../components/ArticleList';
+import ArticleForm from '../components/ArticleForm';
 
 // --- Estilos Consistentes ---
 
@@ -51,6 +56,13 @@ const eventRowStyle = {
   borderBottom: '1px solid #444',
 };
 
+const actionsCellStyle = {
+  display: 'flex',
+  gap: '8px',
+  alignItems: 'center',
+  flexWrap: 'wrap',
+};
+
 const headerRowStyle = {
   ...eventRowStyle,
   fontWeight: 'bold',
@@ -87,6 +99,10 @@ function AdminPage() {
   const [token, setToken] = useState(localStorage.getItem('access_token') || null);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  // Artigos
+  const [articles, setArticles] = useState([]);
+  const [showArticleForm, setShowArticleForm] = useState(false);
+  const [editingArticle, setEditingArticle] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -106,8 +122,51 @@ function AdminPage() {
     if (token) {
       setAuthToken(token);
       load();
+      // Buscar artigos
+      getRecentArticles().then(res => {
+        setArticles(res.data || []);
+      }).catch(err => {
+        setError('Falha ao carregar artigos');
+      });
     }
   }, [token]);
+  // Função para abrir o formulário de artigo (criação)
+  const handleOpenArticleForm = () => {
+    setEditingArticle(null);
+    setShowArticleForm(true);
+  };
+
+  // Função para salvar/criar/editar artigo
+  const handleSaveArticle = async (formData, id) => {
+    try {
+      if (id) {
+        // Editar artigo
+        await fetch(`http://localhost:8000/artigo/artigo/editar/${id}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: formData
+        });
+      } else {
+        // Criar artigo
+        await fetch(`http://localhost:8000/artigo/artigo`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: formData
+        });
+      }
+      setShowArticleForm(false);
+      setEditingArticle(null);
+      // Atualizar lista de artigos
+      const res = await getRecentArticles();
+      setArticles(res.data || []);
+    } catch (err) {
+      setError('Erro ao salvar artigo');
+    }
+  };
 
   const handleCreate = () => {
     setEditing(null);
@@ -235,8 +294,11 @@ function AdminPage() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
         <h1>Painel do Administrador</h1>
+        {token && (
+          <button onClick={handleLogout} style={{ ...buttonStyle, backgroundColor: '#555', marginLeft: 'auto' }}>Logout</button>
+        )}
       </div>
 
       {!token ? (
@@ -253,82 +315,120 @@ function AdminPage() {
       ) : (
         // ADMIN CONTENT
         <div>
-          <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <p style={{ margin: 0 }}>Gerencie eventos e suas edições.</p>
-            <div>
-              <button onClick={handleCreate} style={buttonStyle}>Novo Evento</button>
-              <button onClick={handleLogout} style={{ ...buttonStyle, marginLeft: 12, backgroundColor: '#555' }}>Logout</button>
-            </div>
-          </div>
-          
-          {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
-
-          {showForm && (
-            <EventForm initial={editing} onSave={handleSave} onCancel={() => { setShowForm(false); setEditing(null); }} />
-          )}
-
-          {showEditionForm && (
-            <EditionForm 
-              event={eventForEdition}
-              initial={editingEdition}
-              onSave={handleSaveEdition} 
-              onCancel={() => { setShowEditionForm(false); setEditingEdition(null); setEventForEdition(null); }} 
-            />
-          )}
-
-          <div style={cardStyle}>
-            <div style={headerRowStyle}>
-              <div></div>
-              <div>Nome</div>
-              <div>Sigla</div>
-              <div>Ações</div>
-            </div>
-            {loading ? <p>Carregando eventos...</p> : (
-              <div>
-                {events.map(ev => (
-                  <React.Fragment key={ev.id}>
-                    <div style={eventRowStyle}>
-                        <button onClick={() => toggleEditions(ev.id, ev.nome)} style={{...buttonStyle, padding: '8px', width: '40px', fontSize: '1rem', marginTop: 0}}>
-                            {expandedEventId === ev.id ? '-' : '+'}
-                        </button>
-                        <div>{ev.nome}</div>
-                        <div>{ev.sigla}</div>
-                        <div>
-                            <button onClick={() => handleEdit(ev)} style={{ ...buttonStyle, padding: '8px 16px', fontSize: '0.9rem', marginTop: 0 }}>Editar</button>
-                            <button onClick={() => handleCreateEdition(ev)} style={{ ...buttonStyle, padding: '8px 16px', fontSize: '0.9rem', marginLeft: 8, marginTop: 0 }}>Criar Edição</button>
-                            <button onClick={() => handleDelete(ev)} style={{ ...buttonStyle, padding: '8px 16px', fontSize: '0.9rem', marginLeft: 8, marginTop: 0, backgroundColor: '#ff6464' }}>Remover</button>
-                        </div>
-                    </div>
-                    {expandedEventId === ev.id && (
-                        <div style={editionSectionStyle}>
-                            {ev.edicoes === null ? <p>Carregando edições...</p> :
-                             ev.edicoes.length === 0 ? <p>Nenhuma edição cadastrada.</p> :
-                             (
-                                 <>
-                                 <div style={{...editionRowStyle, fontWeight: 'bold'}}>
-                                     <div>Ano</div>
-                                     <div>Local</div>
-                                     <div>Ações</div>
-                                 </div>
-                                {ev.edicoes.map(ed => (
-                                    <div key={ed.id} style={editionRowStyle}>
-                                        <div>{ed.ano}</div>
-                                        <div>{ed.local}</div>
-                                        <div>
-                                            <button onClick={() => handleEditEdition(ed, ev)} style={{ ...buttonStyle, padding: '6px 12px', fontSize: '0.8rem', marginTop: 0 }}>Editar</button>
-                                            <button onClick={() => handleDeleteEdition(ed, ev)} style={{ ...buttonStyle, padding: '6px 12px', fontSize: '0.8rem', marginLeft: 8, marginTop: 0, backgroundColor: '#c14242' }}>Deletar</button>
-                                        </div>
-                                    </div>
-                                ))}
-                                </>
-                             )
-                            }
-                        </div>
-                    )}
-                  </React.Fragment>
-                ))}
+          <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ ...cardStyle, marginBottom: '2rem' }}>
+                <p style={{ margin: 0 }}>Gerencie eventos e suas edições.</p>
+                <button onClick={handleCreate} style={buttonStyle}>Novo Evento</button>
               </div>
-            )}
+              {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+              {showForm && (
+                <EventForm initial={editing} onSave={handleSave} onCancel={() => { setShowForm(false); setEditing(null); }} />
+              )}
+              {showEditionForm && (
+                <EditionForm 
+                  event={eventForEdition}
+                  initial={editingEdition}
+                  onSave={handleSaveEdition} 
+                  onCancel={() => { setShowEditionForm(false); setEditingEdition(null); setEventForEdition(null); }} 
+                />
+              )}
+              <div style={cardStyle}>
+                <div style={headerRowStyle}>
+                  <div></div>
+                  <div>Nome</div>
+                  <div>Sigla</div>
+                  <div>Ações</div>
+                </div>
+                {loading ? <p>Carregando eventos...</p> : (
+                  <div>
+                    {events.map(ev => (
+                      <React.Fragment key={ev.id}>
+                        <div style={eventRowStyle}>
+                            <button onClick={() => toggleEditions(ev.id, ev.nome)} style={{...buttonStyle, padding: '8px', width: '40px', fontSize: '1rem', marginTop: 0}}>
+                                {expandedEventId === ev.id ? '-' : '+'}
+                            </button>
+                            <div>{ev.nome}</div>
+                            <div>{ev.sigla}</div>
+                <div style={actionsCellStyle}>
+                  <button onClick={() => handleEdit(ev)} style={{ ...buttonStyle, padding: '8px 16px', fontSize: '0.9rem', marginTop: 0 }}>Editar</button>
+                  <button onClick={() => handleCreateEdition(ev)} style={{ ...buttonStyle, padding: '8px 16px', fontSize: '0.9rem', marginTop: 0 }}>Criar Edição</button>
+                  <button onClick={() => handleDelete(ev)} style={{ ...buttonStyle, padding: '8px 16px', fontSize: '0.9rem', marginTop: 0, backgroundColor: '#ff6464' }}>Remover</button>
+                </div>
+                        </div>
+                        {expandedEventId === ev.id && (
+                            <div style={editionSectionStyle}>
+                                {ev.edicoes === null ? <p>Carregando edições...</p> :
+                                 ev.edicoes.length === 0 ? <p>Nenhuma edição cadastrada.</p> :
+                                 (
+                                     <>
+                                     <div style={{...editionRowStyle, fontWeight: 'bold'}}>
+                                         <div>Ano</div>
+                                         <div>Local</div>
+                                         <div>Ações</div>
+                                     </div>
+                                    {ev.edicoes.map(ed => (
+                                        <div key={ed.id} style={editionRowStyle}>
+                                            <div>{ed.ano}</div>
+                                            <div>{ed.local}</div>
+                                            <div>
+                                                <button onClick={() => handleEditEdition(ed, ev)} style={{ ...buttonStyle, padding: '6px 12px', fontSize: '0.8rem', marginTop: 0 }}>Editar</button>
+                                                <button onClick={() => handleDeleteEdition(ed, ev)} style={{ ...buttonStyle, padding: '6px 12px', fontSize: '0.8rem', marginLeft: 8, marginTop: 0, backgroundColor: '#c14242' }}>Deletar</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    </>
+                                 )
+                                }
+                            </div>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <ArticleManager 
+                onAddArticle={handleOpenArticleForm}
+              />
+              {showArticleForm && (
+                <ArticleForm 
+                  onSave={handleSaveArticle}
+                  onCancel={() => {
+                    setShowArticleForm(false);
+                    setEditingArticle(null);
+                  }}
+                  initial={editingArticle}
+                />
+              )}
+              <div style={cardStyle}>
+                <h2 style={{ marginTop: 0 }}>Lista de Artigos</h2>
+                <ArticleList 
+                  articles={articles}
+                  onEdit={article => {
+                    setEditingArticle(article);
+                    setShowArticleForm(true);
+                  }}
+                  onDelete={async article => {
+                    if (!window.confirm(`Confirma exclusão do artigo '${article.titulo}'?`)) return;
+                    try {
+                      await fetch(`http://localhost:8000/artigo/artigo/remover/${article.id}`, {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                        }
+                      });
+                      // Atualiza lista após deletar
+                      const res = await getRecentArticles();
+                      setArticles(res.data || []);
+                    } catch (err) {
+                      setError('Erro ao remover artigo');
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
       )}

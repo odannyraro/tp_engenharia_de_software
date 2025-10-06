@@ -18,6 +18,15 @@ const logoStyle = {
   color: '#fff',
   fontSize: '1.5rem',
   fontWeight: 'bold',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+};
+
+const logoImageStyle = {
+  width: '32px',
+  height: '32px',
+  objectFit: 'contain',
 };
 
 const navStyle = {
@@ -97,7 +106,10 @@ function Header() {
   return (
     <header style={headerStyle}>
       {/* Lado Esquerdo: Logo */}
-      <Link to="/" style={logoStyle}>Biblioteca Digital</Link>
+      <Link to="/" style={logoStyle}>
+        <img src="/lattes-cinius.png" alt="LattesCinius Logo" style={logoImageStyle} />
+        <span>LattesCinius</span>
+      </Link>
 
       {/* Lado Direito: Navegação e Usuário */}
       <nav style={navStyle}>
@@ -115,6 +127,13 @@ function Header() {
         </NavLink>
         
         {/* Seção do Usuário */}
+        <NavLink 
+          to="/notifications/signup" 
+          style={({ isActive }) => ({ ...navLinkStyle, ...(isActive ? activeLinkStyle : {}) })}
+        >
+          Assinar Notificações
+        </NavLink>
+        
         {user ? (
           <div style={userStyle}>
             <span>Olá, {user.nome}</span>

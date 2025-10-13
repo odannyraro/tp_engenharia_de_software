@@ -38,6 +38,14 @@ Banco de Dados = SQLite
 - Criar interface, design e estrutura do frontend para a tela [Filipe]
 - Fazer a ligação do front com as chamadas na API [Filipe]
 
+# Hisptória #3: Como administrador, eu quero cadastrar (editar, deletar) um artigo manualmente, incluindo seu pdf:
+# Tarefas e Responsáveis:
+- Criar classe e API para Artigos [Arthur]
+- Incluir no banco de dados [Arthur]
+- Criar rotas de cadastro, edição e remoção de artigos [Arthur]
+- Fazer conexão com o front [Filipe]
+- Baixar e exibir PDF
+
 
 # História #7: Como usuário, eu quero ter uma home page com meus artigos, organizados por ano 
 # Tarefas e Responsáveis:

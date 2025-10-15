@@ -15,7 +15,7 @@ Banco de Dados = SQLite
 - Filipe Caldeira - Banco de Dados / Front-End
 - Samuel Miranda - Back-End
 - Daniel Rodrigues - Front-End
-- Arthur Quaresma - Banck-End / Front-End
+- Arthur Quaresma - Back-End / Front-End
 
 # Diagrama de Sequencia - Cadastro Evento 
 

@@ -1,6 +1,6 @@
 import bibtexparser
 from bibtexparser.customization import convert_to_unicode
-from schemas import ArtigoSchema  # Assumindo que schemas é importável
+from app.schemas import ArtigoSchema  # Assumindo que schemas é importável
 from typing import List # Novo import necessário para o tipo de retorno
 
 # A função agora retorna uma lista de ArtigoSchema

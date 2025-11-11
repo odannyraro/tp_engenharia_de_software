@@ -1,7 +1,11 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, ForeignKey
 from sqlalchemy.orm import declarative_base
+from pathlib import Path
 
-db = create_engine("sqlite:///banco.db") # conexão com o db
+# Ensure the SQLite file is created next to this module (backend/app/banco.db)
+# instead of relative to the current working directory which varies in tests.
+db_path = Path(__file__).resolve().parent / "banco.db"
+db = create_engine(f"sqlite:///{db_path}")
 
 Base = declarative_base() # base do db
 
@@ -93,3 +97,8 @@ class Subscriber(Base):
     def __init__(self, nome, email):
         self.nome = nome
         self.email = email
+
+
+# Create tables if they don't exist. This runs at import time which is fine for
+# small test/dev setups and ensures tests have the required tables.
+Base.metadata.create_all(db)

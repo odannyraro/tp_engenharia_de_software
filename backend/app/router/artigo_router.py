@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from fastapi import Form
-from schemas import ArtigoSchema, ResponseArtigoSchema
-from dependencies import pegar_sessao, verificar_token
-from models import Artigo, Usuario, Subscriber, Evento, EdicaoEvento
+from app.schemas import ArtigoSchema, ResponseArtigoSchema
+from app.dependencies import pegar_sessao, verificar_token
+from app.models import Artigo, Usuario, Subscriber, Evento, EdicaoEvento
 from typing import List, Dict, Any, Tuple, Optional 
 import smtplib
 import os
 from email.message import EmailMessage
 from starlette.concurrency import run_in_threadpool # Import necessário para assincronicidade
-from utils import parse_bibtex_to_artigo_schema
+from app.utils import parse_bibtex_to_artigo_schema
 import shutil # Necessário para operações de arquivo
 import zipfile 
 import tempfile

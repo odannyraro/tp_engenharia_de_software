@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from schemas import UsuarioSchema, LoginSchema
-from dependencies import pegar_sessao, verificar_token
-from models import Usuario
-from main import bcrypt_context, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY
+from app.schemas import UsuarioSchema, LoginSchema
+from app.dependencies import pegar_sessao, verificar_token
+from app.models import Usuario
+from app.main import bcrypt_context, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordRequestForm

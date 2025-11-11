@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from schemas import SubscriberSchema, ResponseSubscriberSchema
-from dependencies import pegar_sessao, verificar_token
-from models import Subscriber, Usuario
+from app.schemas import SubscriberSchema, ResponseSubscriberSchema
+from app.dependencies import pegar_sessao, verificar_token
+from app.models import Subscriber, Usuario
 
 subscriber_router = APIRouter(prefix="/subscriber", tags=["subscriber"])
 

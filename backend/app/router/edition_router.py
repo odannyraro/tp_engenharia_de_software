@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from dependencies import pegar_sessao
-from models import Evento, EdicaoEvento, Artigo
+from app.dependencies import pegar_sessao
+from app.models import Evento, EdicaoEvento, Artigo
 
 edition_router = APIRouter(prefix="/edicao", tags=["edicao"])
 

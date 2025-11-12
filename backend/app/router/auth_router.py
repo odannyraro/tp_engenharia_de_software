@@ -3,21 +3,34 @@ from sqlalchemy.orm import Session
 from app.schemas import UsuarioSchema, LoginSchema
 from app.dependencies import pegar_sessao, verificar_token
 from app.models import Usuario
-from app.main import bcrypt_context, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY
 from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from fastapi.security import OAuth2PasswordRequestForm
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
-def criar_token(id_usuario, duracao_token=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)):
-    data_expiracao = datetime.now(timezone.utc) + duracao_token
+def criar_token(id_usuario, duracao_token=None):
+    # import secrets lazily to avoid circular import with app.main
+    from app.main import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+
+    # determine duration
+    if duracao_token is None:
+        duracao = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    elif isinstance(duracao_token, int):
+        duracao = timedelta(minutes=duracao_token)
+    else:
+        duracao = duracao_token
+
+    data_expiracao = datetime.now(timezone.utc) + duracao
     dic_info = {"sub": str(id_usuario), "exp": data_expiracao}
     jwt_codificado = jwt.encode(dic_info, SECRET_KEY, ALGORITHM)
     return jwt_codificado
 
 def autenticar_usuario(email, senha, session):
-    usuario = session.query(Usuario).filter(Usuario.email==email).first()
+    # import bcrypt_context lazily to avoid circular imports
+    from app.main import bcrypt_context
+
+    usuario = session.query(Usuario).filter(Usuario.email == email).first()
     if not usuario:
         return False
     elif not bcrypt_context.verify(senha, usuario.senha):
@@ -40,6 +53,8 @@ async def criar_conta(usuario_schema: UsuarioSchema, session: Session = Depends(
     if usuario:
         raise HTTPException(status_code=400, detail="Já existe esse usuario com esse email")
     else:
+        # hash password lazily to avoid circular import issues
+        from app.main import bcrypt_context
         senha_criptografada = bcrypt_context.hash(usuario_schema.senha)
         novo_usuario = Usuario(usuario_schema.nome, usuario_schema.email, senha_criptografada, usuario_schema.admin)
         session.add(novo_usuario)

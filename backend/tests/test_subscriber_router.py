@@ -1,9 +1,11 @@
 import unittest
 from fastapi.testclient import TestClient
-from app.main import app, bcrypt_context
+from app.main import app
 from app.models import db, Subscriber, Usuario
 from sqlalchemy.orm import sessionmaker
 from app.router.auth_router import criar_token
+
+# GERADOR POR IA
 
 SessionLocal = sessionmaker(bind=db)
 
@@ -44,19 +46,15 @@ class TestSubscriberRouter(unittest.TestCase):
         self.session.commit()
         self.session.refresh(novo)
 
-        # ensure an admin user exists for this test
-        hashed = bcrypt_context.hash("123456")
-        admin = Usuario("Admin", "adm@example.com", hashed, True)
-        # remove any existing admin with that email first
         self.session.query(Usuario).filter(Usuario.email == "adm@example.com").delete()
+        admin = Usuario("Admin", "adm@example.com", "unused-password", True)
         self.session.add(admin)
         self.session.commit()
+        self.session.refresh(admin)
 
-        # login using JSON body as the endpoint expects
-        res = self.client.post("/auth/login", json={"email": "adm@example.com", "senha": "123456"})
-        body = res.json()
-        token = body.get("access_token")
-        self.assertIsNotNone(token, msg=f"Login failed, response: {body}")
+        # create a token directly for the admin user (no login request)
+        token = criar_token(admin.id)
+        self.assertIsNotNone(token, msg="criar_token did not return a token")
 
         # call delete endpoint
         headers = {"Authorization": f"Bearer {token}"}

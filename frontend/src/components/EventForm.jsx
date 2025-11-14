@@ -65,16 +65,39 @@ export default function EventForm({ initial, onSave, onCancel }) {
   const [nome, setNome] = useState('');
   const [sigla, setSigla] = useState('');
   const [entidade, setEntidade] = useState('');
+  const [loading, setLoading] = useState(false); // <--- NOVO
+  const [status, setStatus] = useState(null);   // <--- NOVO: { message, type: 'error' }
 
   useEffect(() => {
     setNome(initial?.nome || '');
     setSigla(initial?.sigla || '');
     setEntidade(initial?.entidade_promotora || '');
+    setStatus(null); // Limpa o status ao iniciar/editar
   }, [initial]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => { // <--- Tornar assíncrona
     e.preventDefault();
-    onSave({ nome, sigla, entidade_promotora: entidade });
+    setLoading(true);
+    setStatus(null); // Limpa o status anterior
+    
+    const payload = { 
+        nome, 
+        sigla, 
+        entidade_promotora: entidade 
+    };
+
+    // onSave agora é a função que chama a API e retorna { success, message }
+    const result = await onSave(payload); 
+    
+    setLoading(false);
+
+    if (result.success) {
+      // Em caso de sucesso, o modal será fechado na função onSave (handleSave em AdminPage)
+      // Não é necessário definir o status aqui, pois a tela será atualizada.
+    } else {
+      // Em caso de falha, exibe o erro no modal
+      setStatus({ message: result.message, type: 'error' });
+    }
   };
 
   // Impede que o clique dentro do formulário feche o modal
@@ -95,6 +118,7 @@ export default function EventForm({ initial, onSave, onCancel }) {
               onChange={(e) => setNome(e.target.value)} 
               required 
               style={inputStyle} 
+              disabled={loading} // <--- DESABILITAR ENQUANTO CARREGA
             />
           </div>
           <div>
@@ -103,6 +127,7 @@ export default function EventForm({ initial, onSave, onCancel }) {
               value={sigla} 
               onChange={(e) => setSigla(e.target.value)} 
               style={inputStyle} 
+              disabled={loading} // <--- DESABILITAR ENQUANTO CARREGA
             />
           </div>
           <div>
@@ -111,18 +136,34 @@ export default function EventForm({ initial, onSave, onCancel }) {
               value={entidade} 
               onChange={(e) => setEntidade(e.target.value)} 
               style={inputStyle} 
+              disabled={loading} // <--- DESABILITAR ENQUANTO CARREGA
             />
           </div>
+
+          {/* NOVO: Exibir mensagem de status/erro */}
+          {status && (
+            <p style={{ 
+              marginTop: '1rem', 
+              textAlign: 'center',
+              color: status.type === 'error' ? '#ff6464' : '#fff', // Cor vermelha para erro
+              fontWeight: 'bold',
+            }}>
+              {status.message}
+            </p>
+          )}
+          {/* Fim NOVO */}
+
           <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
             <button 
               type="button" 
               onClick={onCancel} 
               style={{...buttonStyle, backgroundColor: '#555'}}
+              disabled={loading} // <--- DESABILITAR ENQUANTO CARREGA
             >
               Cancelar
             </button>
-            <button type="submit" style={buttonStyle}>
-              Salvar
+            <button type="submit" style={buttonStyle} disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>

@@ -286,18 +286,28 @@ function AdminPage() {
   };
 
   const handleSave = async (payload) => {
+    const isEditing = !!editing; // Determina se é edição ou criação
     try {
-      if (editing) {
+      if (isEditing) {
+        // Se for edição, usamos o ID que está no estado `editing`
         await updateEvent(editing.id, payload);
       } else {
         await createEvent(payload);
       }
+      
+      // Ações de sucesso: Fechar modal, limpar estado e recarregar lista.
       setShowForm(false);
       setEditing(null);
-      await load();
+      setError(null); // Limpa o erro principal da página
+      await load(); // Recarrega a lista de eventos no AdminPage
+      
+      return { success: true, message: `Evento ${payload.nome} ${isEditing ? 'editado' : 'criado'} com sucesso` };
+
     } catch (err) {
-      setError('Erro ao salvar evento');
+      const errorMessage = err?.response?.data?.detail || 'Erro ao salvar evento';
       console.error(err);
+      
+      return { success: false, message: errorMessage };
     }
   };
 

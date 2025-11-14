@@ -150,7 +150,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
     });
 
     // ====================================================================
-    //  TESTE: Prevenção de Duplicação de Evento
+    //  TESTE 2: Prevenção de Duplicação de Evento
     // ====================================================================
 
     it('Deve exibir mensagem de erro ao tentar criar evento duplicado', () => {
@@ -221,5 +221,70 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // Confirma a exclusão
         cy.on('window:confirm', () => true);
         cy.contains('div', duplicateEventName).should('not.exist');
+    });
+
+    // ====================================================================
+    //  TESTE 3: Criação de um novo evento após a remoção de um evento anterior (Sanity Check)
+    // ====================================================================
+
+    it('Deve permitir a criação de um novo evento após a remoção de um evento anterior', () => {
+        const deletedEventName = `Evento a ser Deletado ${Date.now()}`;
+        const newEventName = `Evento Criado Depois ${Date.now()}`;
+        
+        // --- 1. Login ---
+        cy.log('Passo P1: Login como Admin');
+        cy.visit(`${baseUrl}/admin`);
+        cy.get('input[placeholder="Email"]').type(adminEmail);
+        cy.get('input[placeholder="Senha"]').type(adminPassword);
+        cy.get('button[type="submit"]').click();
+        cy.contains('button', 'Novo Evento').should('be.visible');
+
+        // --- 2. Criação do Evento que será deletado ---
+        cy.log('Passo P2: Criação do evento a ser deletado');
+        cy.contains('button', 'Novo Evento').click();
+        const eventModalTitle = 'Criar Novo Evento';
+        cy.get('h2').contains(eventModalTitle).should('be.visible');
+        cy.get('label').contains('Nome:').next('input').type(deletedEventName);
+        cy.get('label').contains('Sigla:').next('input').type('DEL');
+        cy.contains('button', 'Salvar').click();
+        cy.contains('h2', eventModalTitle).should('not.exist');
+        cy.wait(500); 
+        cy.contains('div', deletedEventName).should('be.visible');
+
+        // --- 3. Remoção do Evento ---
+        cy.log('Passo P3: Remoção do evento');
+        cy.contains('div', deletedEventName)
+            .parents('div[style*="grid-template-columns"]') 
+            .find('button')
+            .contains('Remover')
+            .click();
+        cy.on('window:confirm', () => true);
+        cy.contains('div', deletedEventName).should('not.exist');
+        cy.wait(500); 
+
+        // --- 4. Criação de um NOVO Evento ---
+        cy.log('Passo P4: Criação de um novo evento');
+        cy.contains('button', 'Novo Evento').click();
+        cy.get('h2').contains(eventModalTitle).should('be.visible');
+        cy.get('label').contains('Nome:').next('input').type(newEventName);
+        cy.get('label').contains('Sigla:').next('input').type('NEW');
+        
+        // Salva - Deve ter sucesso
+        cy.contains('button', 'Salvar').click();
+        
+        // --- 5. Verificação de Sucesso ---
+        cy.log('Passo P5: Verificação do novo evento');
+        cy.contains('h2', eventModalTitle).should('not.exist');
+        cy.contains('div', newEventName).should('be.visible');
+
+        // --- 6. Limpeza ---
+        cy.log('Passo P6: Limpeza do novo evento');
+        cy.contains('div', newEventName)
+            .parents('div[style*="grid-template-columns"]') 
+            .find('button')
+            .contains('Remover')
+            .click();
+        cy.on('window:confirm', () => true);
+        cy.contains('div', newEventName).should('not.exist');
     });
 });

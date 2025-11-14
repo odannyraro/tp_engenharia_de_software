@@ -69,7 +69,7 @@ export default function EventForm({ initial, onSave, onCancel }) {
   useEffect(() => {
     setNome(initial?.nome || '');
     setSigla(initial?.sigla || '');
-    setEntidade(initial?.entidade_promotora || 'Sociedade Brasileira de Computação');
+    setEntidade(initial?.entidade_promotora || '');
   }, [initial]);
 
   const handleSubmit = (e) => {

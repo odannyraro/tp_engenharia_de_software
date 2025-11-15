@@ -42,7 +42,6 @@ class TestEventoRouter(unittest.TestCase):
             self.assertIn("Evento teste", body.get('nome'))
 
     def test_criar_remover_editar_evento(self):
-        # prepare admin user
         self.session.query(Usuario).filter(Usuario.email == "adm@example.com").delete()
         admin = Usuario("Admin", "adm@example.com", "unused-password", True)
         self.session.add(admin)

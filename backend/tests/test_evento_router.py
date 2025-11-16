@@ -12,6 +12,9 @@ class TestEventoRouter(unittest.TestCase):
         self.client = TestClient(app)
         self.session = SessionLocal()
 
+    def tearDown(self):
+        self.session.close()
+
     def test_listar_eventos(self):
         res = self.client.get("/evento/recentes")
         self.assertEqual(res.status_code, 200)
@@ -76,6 +79,9 @@ class TestEdicaoRouter(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.session = SessionLocal()
+
+    def tearDown(self):
+        self.session.close()
 
     def test_criar_editar_remove_edicao(self):
         # ensure admin

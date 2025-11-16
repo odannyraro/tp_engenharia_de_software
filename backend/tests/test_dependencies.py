@@ -5,6 +5,8 @@ from sqlalchemy.orm import sessionmaker, Session
 from app.router.auth_router import criar_token
 from fastapi import HTTPException
 
+# GERADO IA
+
 SessionLocal = sessionmaker(bind=db)
 
 

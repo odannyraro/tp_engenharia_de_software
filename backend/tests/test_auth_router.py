@@ -13,6 +13,9 @@ class TestAuthRouter(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.session = SessionLocal()
+    
+    def tearDown(self):
+        self.session.close()
 
     def test_usuario_info(self):
         self.session.query(Usuario).filter(Usuario.email == "adm@example.com").delete()

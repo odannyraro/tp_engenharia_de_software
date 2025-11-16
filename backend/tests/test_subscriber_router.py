@@ -19,7 +19,6 @@ class TestSubscriberRouter(unittest.TestCase):
         self.session.commit()
 
     def tearDown(self):
-        # cleanup any created subscriber or admin
         try:
             self.session.query(Subscriber).filter(Subscriber.email == self.test_email).delete()
             self.session.query(Usuario).filter(Usuario.email == self.test_email).delete()

@@ -1,7 +1,6 @@
 // Arquivo: cypress/e2e/admin_flow.cy.js
 
 describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
-    // ⚠️ ATENÇÃO: Substitua 'SENHA_DO_ADMIN' pela senha real do seu usuário 'adm@example.com'
     const adminEmail = 'teste@example.com';
     const adminPassword = '123456'; 
     const baseUrl = 'http://localhost:5173';
@@ -23,8 +22,12 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.writeFile('cypress/fixtures/dummy.pdf', 'Conteúdo de teste PDF');
     });
 
+    // ====================================================================
+    //  TESTE 1: Criar evento, edição e artigo com upload de PDF
+    // ====================================================================
+
     it('Deve criar um evento, uma edição e um artigo com upload de PDF', () => {
-        // --- 1. Login como Admin e navegação ---
+        // --- Login como Admin e navegação ---
         cy.log('Passo 1: Login como Admin');
         cy.visit(`${baseUrl}/admin`);
         cy.get('input[placeholder="Email"]').type(adminEmail);
@@ -35,7 +38,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.contains('Gerencie eventos e suas edições.').should('be.visible');
         cy.contains('button', 'Novo Evento').should('be.visible');
 
-        // --- 2. Criação do Evento ---
+        // Criação do Evento ---
         cy.log('Passo 2: Criação do Evento');
         cy.contains('button', 'Novo Evento').click();
         
@@ -60,18 +63,17 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // Asserção: Evento criado e visível na lista
         cy.contains('div', eventName).should('be.visible');
         
-        // --- 3. Criação da Edição ---
+        // --- Criação da Edição ---
         cy.log('Passo 3: Criação da Edição');
         
-        // 3.1. Expande o evento recém-criado 
-        // Note: o `parents('.div')` é uma correção de seletor defensiva
+        // Expande o evento recém-criado 
         cy.contains('div', eventName)
           .parents('div[style*="grid-template-columns"]') 
           .find('button')
           .contains('+')
           .click();
         
-        // 3.2. Clica no botão Criar Edição do evento
+        // Clica no botão Criar Edição do evento
         cy.contains('div', eventName)
           .parents('div[style*="grid-template-columns"]')
           .find('button')
@@ -95,12 +97,12 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // AGUARDA E ASSERÇÃO CRÍTICA: Espera o modal sumir
         cy.contains('h2', editionModalTitle).should('not.exist');
         
-        // Asserção: Edição visível no painel expandido
+        // Edição visível no painel expandido
         cy.get('div[style*="background-color: rgb(58, 58, 60)"]')
           .contains('div', `${editionYear}`)
           .should('be.visible');
 
-        // --- 4. Criação do Artigo ---
+        // --- Criação do Artigo ---
         cy.log('Passo 4: Criação do Artigo com PDF');
 
         // Clica no botão "Adicionar Artigo" (no componente ArticleManager)
@@ -125,24 +127,24 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // Clica em Salvar
         cy.contains('button', 'Salvar').click();
         
-        // AGUARDA E ASSERÇÃO CRÍTICA: Espera o modal do artigo desaparecer
+        // Espera o modal do artigo desaparecer
         cy.contains('h2', articleModalTitle).should('not.exist');
         
-        // --- 5. Verificação do Artigo na Lista e Detalhe ---
+        // --- Verificação do Artigo na Lista e Detalhe ---
         cy.log('Passo 5: Verificação do Artigo na Lista');
         
         // Encontra o container da Lista de Artigos pelo seu H2
         const articleListContainer = cy.contains('h2', 'Lista de Artigos').parent(); 
 
-        // Asserção 5.1: Artigo visível na lista
+        // Artigo visível na lista
         articleListContainer.contains(articleTitle).should('be.visible');
         
-        // Asserção 5.2: Clica no link do artigo
+        // Clica no link do artigo
         articleListContainer
           .contains('a', articleTitle) 
           .click();
 
-        // Asserção 5.3: Verifica se está na página de detalhe
+        // Verifica se está na página de detalhe
         cy.url().should('include', '/article/');
         cy.contains('h1', articleTitle).should('be.visible');
         cy.contains(`Autores: ${articleAuthors}`).should('be.visible');
@@ -157,7 +159,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         const duplicateEventName = `Evento Duplicado E2E ${Date.now()}`;
         const errorMessage = 'Já existe evento com esse nome'; // Mensagem do backend
 
-        // --- 1. Login (reutilizado) ---
+        // --- Login ---
         cy.log('Passo D1: Login como Admin');
         cy.visit(`${baseUrl}/admin`);
         cy.get('input[placeholder="Email"]').type(adminEmail);
@@ -165,7 +167,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.get('button[type="submit"]').click();
         cy.contains('button', 'Novo Evento').should('be.visible');
 
-        // --- 2. Criação do PRIMEIRO Evento (Sucesso) ---
+        // --- Criação do PRIMEIRO Evento ---
         cy.log('Passo D2: Criar o primeiro evento (base)');
         cy.contains('button', 'Novo Evento').click();
         
@@ -183,7 +185,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.wait(500); 
         cy.contains('div', duplicateEventName).should('be.visible');
 
-        // --- 3. Tenta criar o SEGUNDO Evento (Duplicado) ---
+        // --- Tenta criar o SEGUNDO Evento (Duplicado) ---
         cy.log('Passo D3: Tentar criar o evento duplicado');
         cy.contains('button', 'Novo Evento').click();
         cy.get('h2').contains(eventModalTitle).should('be.visible');
@@ -196,7 +198,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // Salva - A API deve retornar 400
         cy.contains('button', 'Salvar').click();
         
-        // --- 4. Verificação da Mensagem de Erro ---
+        // --- Verificação da Mensagem de Erro ---
         cy.log('Passo D4: Verificar se a mensagem de erro aparece');
         
         // O frontend (AdminPage.jsx) exibe o erro em uma tag <p style={{ color: 'red' }}>
@@ -204,7 +206,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // O erro do backend é "Já existe evento com esse nome"
         cy.contains('p', errorMessage).should('be.visible');
 
-        // --- 5. Limpeza (Fechar o Modal de Erro e Remover o Evento Original) ---
+        // --- Limpeza (Fechar o Modal de Erro e Remover o Evento Original) ---
         cy.log('Passo D5: Limpeza do evento duplicado');
         
         // Cancela o modal
@@ -231,7 +233,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         const deletedEventName = `Evento a ser Deletado ${Date.now()}`;
         const newEventName = `Evento Criado Depois ${Date.now()}`;
         
-        // --- 1. Login ---
+        // --- Login ---
         cy.log('Passo P1: Login como Admin');
         cy.visit(`${baseUrl}/admin`);
         cy.get('input[placeholder="Email"]').type(adminEmail);
@@ -239,7 +241,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.get('button[type="submit"]').click();
         cy.contains('button', 'Novo Evento').should('be.visible');
 
-        // --- 2. Criação do Evento que será deletado ---
+        // --- Criação do Evento que será deletado ---
         cy.log('Passo P2: Criação do evento a ser deletado');
         cy.contains('button', 'Novo Evento').click();
         const eventModalTitle = 'Criar Novo Evento';
@@ -251,7 +253,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.wait(500); 
         cy.contains('div', deletedEventName).should('be.visible');
 
-        // --- 3. Remoção do Evento ---
+        // --- Remoção do Evento ---
         cy.log('Passo P3: Remoção do evento');
         cy.contains('div', deletedEventName)
             .parents('div[style*="grid-template-columns"]') 
@@ -262,7 +264,7 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         cy.contains('div', deletedEventName).should('not.exist');
         cy.wait(500); 
 
-        // --- 4. Criação de um NOVO Evento ---
+        // --- Criação de um NOVO Evento ---
         cy.log('Passo P4: Criação de um novo evento');
         cy.contains('button', 'Novo Evento').click();
         cy.get('h2').contains(eventModalTitle).should('be.visible');
@@ -272,12 +274,12 @@ describe('E2E: Fluxo Admin - Criação de Evento -> Edição -> Artigo', () => {
         // Salva - Deve ter sucesso
         cy.contains('button', 'Salvar').click();
         
-        // --- 5. Verificação de Sucesso ---
+        // --- Verificação de Sucesso ---
         cy.log('Passo P5: Verificação do novo evento');
         cy.contains('h2', eventModalTitle).should('not.exist');
         cy.contains('div', newEventName).should('be.visible');
 
-        // --- 6. Limpeza ---
+        // --- Limpeza ---
         cy.log('Passo P6: Limpeza do novo evento');
         cy.contains('div', newEventName)
             .parents('div[style*="grid-template-columns"]') 

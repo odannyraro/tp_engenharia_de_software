@@ -94,13 +94,7 @@ def _extrair_zip_e_mapear_pdfs(zip_file_content: bytes) -> Tuple[Dict[str, str],
         if os.path.exists(zip_temp_path):
             os.remove(zip_temp_path)
 
-# FUNÇÃO AUXILIAR: Lógica de Notificação (mantida)
 def _notificar_subscribers(session: Session, artigo_schema: ArtigoSchema):
-    # ... (Lógica de notificação permanece a mesma)
-    """
-    Notifica subscribers cujo nome case exatamente com algum autor do artigo.
-    Mantida síncrona, deve ser chamada via threadpool se for muito lenta.
-    """
     messages = []
     try:
         subscribers = session.query(Subscriber).all()
@@ -159,7 +153,6 @@ def _notificar_subscribers(session: Session, artigo_schema: ArtigoSchema):
 
     return messages
 
-# FUNÇÃO CORE: Lógica de Validação e Inserção (mantida)
 def _cadastrar_artigo_core(session: Session, artigo_schema: ArtigoSchema) -> str:
     # ... (Lógica core de cadastro permanece a mesma)
     """
@@ -208,10 +201,6 @@ def _cadastrar_artigo_core(session: Session, artigo_schema: ArtigoSchema) -> str
     novo_artigo = Artigo(**artigo_data)
     session.add(novo_artigo)
     return novo_artigo.titulo
-
-# =========================================================================
-# ENDPOINTS (ASSÍNCRONOS)
-# =========================================================================
 
 @artigo_router.get("/")
 async def home():
@@ -289,10 +278,6 @@ async def importar_bibtex(
     session: Session = Depends(pegar_sessao),
     usuario: Usuario = Depends(verificar_token)
 ):
-    """
-    Importa múltiplos artigos a partir de um arquivo BibTeX e um ZIP de PDFs.
-    Requer que o nome do PDF no ZIP corresponda à chave BibTeX.
-    """
     ALLOWED_MIME_TYPES = [
         'application/zip', 
         'application/x-zip-compressed', 
@@ -431,8 +416,6 @@ async def importar_bibtex(
         "notificacoes": notificacoes_por_artigo
     }
 
-# ... (Endpoints listar, remover, editar, pesquisar e author_home permanecem iguais)
-# ENDPOINT: Remover artigo
 @artigo_router.post("/artigo/remover/{id_artigo}")
 async def remover_artigo(id_artigo: int, session: Session = Depends(pegar_sessao),
                        usuario: Usuario = Depends(verificar_token)):

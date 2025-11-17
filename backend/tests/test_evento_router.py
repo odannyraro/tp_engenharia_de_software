@@ -12,6 +12,9 @@ class TestEventoRouter(unittest.TestCase):
         self.client = TestClient(app)
         self.session = SessionLocal()
 
+    def tearDown(self):
+        self.session.close()
+
     def test_listar_eventos(self):
         res = self.client.get("/evento/recentes")
         self.assertEqual(res.status_code, 200)
@@ -42,7 +45,6 @@ class TestEventoRouter(unittest.TestCase):
             self.assertIn("Evento teste", body.get('nome'))
 
     def test_criar_remover_editar_evento(self):
-        # prepare admin user
         self.session.query(Usuario).filter(Usuario.email == "adm@example.com").delete()
         admin = Usuario("Admin", "adm@example.com", "unused-password", True)
         self.session.add(admin)
@@ -77,6 +79,9 @@ class TestEdicaoRouter(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.session = SessionLocal()
+
+    def tearDown(self):
+        self.session.close()
 
     def test_criar_editar_remove_edicao(self):
         # ensure admin

@@ -11,7 +11,7 @@ describe('E2E: Fluxo de Autenticação', () => {
     cy.visit(`${baseUrl}/login`);
 
     // Preenche os campos de e-mail e senha
-    cy.get('input[type="email"]').type('filipe.terra@hotmail.com'); // Exemplo de Admin
+    cy.get('input[type="email"]').type('teste@example.com'); // Exemplo de Admin
     cy.get('input[type="password"]').type('123456'); // Substitua pela senha real
 
     // Clica no botão de Login

@@ -170,6 +170,7 @@ function AdminPage() {
         setLastResponse({ status: res.status, body });
         if (!res.ok) {
           setError(body?.detail || body?.mensagem || 'Erro ao editar artigo');
+          return;
         }
         if (body.notificacoes && Array.isArray(body.notificacoes) && body.notificacoes.length) {
           setNotifications((cur) => [...body.notificacoes, ...cur]);
@@ -190,6 +191,7 @@ function AdminPage() {
         setLastResponse({ status: res.status, body });
         if (!res.ok) {
           setError(body?.detail || body?.mensagem || 'Erro ao criar artigo');
+          return;
         }
         if (body.notificacoes && Array.isArray(body.notificacoes) && body.notificacoes.length) {
           setNotifications((cur) => [...body.notificacoes, ...cur]);

@@ -253,21 +253,11 @@ async def criar_artigo(
         publisher=publisher,
         location=location,
     )
-    try:
-        titulo_cadastrado = await run_in_threadpool(_cadastrar_artigo_core, session, artigo_schema)
-        # Notifica subscribers e captura mensagens
-        notificacoes = await run_in_threadpool(_notificar_subscribers, session, artigo_schema)
-        session.commit()
-    except HTTPException:
-        session.rollback()
-        if caminho_pdf_salvo and os.path.exists(caminho_pdf_salvo):
-            os.remove(caminho_pdf_salvo)
-        raise
-    except Exception as e:
-        session.rollback()
-        if caminho_pdf_salvo and os.path.exists(caminho_pdf_salvo):
-            os.remove(caminho_pdf_salvo)
-        raise HTTPException(status_code=500, detail=f"Erro interno ao cadastrar artigo: {e}")
+
+    titulo_cadastrado = await run_in_threadpool(_cadastrar_artigo_core, session, artigo_schema)
+    # Notifica subscribers e captura mensagens
+    notificacoes = await run_in_threadpool(_notificar_subscribers, session, artigo_schema)
+    session.commit()
     return {"mensagem": f"Artigo {titulo_cadastrado} incluído com sucesso no evento {nome_evento}", "caminho_pdf": caminho_pdf_salvo, "notificacoes": notificacoes}
 
 # ENDPOINT: Importar múltiplos artigos via BibTeX

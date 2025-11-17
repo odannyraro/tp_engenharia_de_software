@@ -84,7 +84,6 @@ class TestEdicaoRouter(unittest.TestCase):
         self.session.close()
 
     def test_criar_editar_remove_edicao(self):
-        # ensure admin
         self.session.query(Usuario).filter(Usuario.email == "adm@example.com").delete()
         admin = Usuario("Admin", "adm@example.com", "unused-password", True)
         self.session.add(admin)
@@ -95,7 +94,6 @@ class TestEdicaoRouter(unittest.TestCase):
 
         headers = {"Authorization": f"Bearer {token}"}
 
-        # create a temporary event in DB (direct DB insert) so we have a valid id_evento
         temp_event = Evento("Evento Teste Temp", "ETT", entidade_promotora="SBS")
         self.session.add(temp_event)
         self.session.commit()
